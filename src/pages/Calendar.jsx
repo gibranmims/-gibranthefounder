@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import ContentPieceModal from '../components/ContentPieceModal'
 import ReadyToPostPanel from '../components/ReadyToPostPanel'
-import { PLATFORMS, quadrantMeta } from '../lib/philosophy'
+import { quadrantMeta } from '../lib/philosophy'
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -21,7 +21,7 @@ function getMonday(date) {
 }
 
 export default function Calendar() {
-  const { contentPieces } = useApp()
+  const { displayName, contentPieces, channels, streakCount } = useApp()
   const [weekOffset, setWeekOffset] = useState(0)
   const [modalState, setModalState] = useState(null) // { piece } | { initial } | null
 
@@ -43,33 +43,63 @@ export default function Calendar() {
       : `${MONTHS[start.getMonth()]} ${start.getDate()} – ${MONTHS[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`
   }, [weekDates])
 
-  function piecesFor(platformKey, dateStr) {
-    return contentPieces.filter(c => c.platform === platformKey && c.scheduled_date === dateStr)
+  // Days (last 7, ending today) that had at least one piece marked posted — the daily-post goal tracker.
+  const daysPostedThisWeek = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      return toDateStr(d)
+    })
+    const postedDates = new Set(contentPieces.filter(c => c.stage === 'posted' && c.posted_date).map(c => c.posted_date))
+    return last7.filter(d => postedDates.has(d)).length
+  }, [contentPieces])
+
+  function piecesFor(channelId, dateStr) {
+    return contentPieces.filter(c => c.channel_id === channelId && c.scheduled_date === dateStr)
   }
 
   const todayStr = toDateStr(new Date())
+  const greeting = useMemo(() => {
+    const h = new Date().getHours()
+    return h < 12 ? 'Good morning,' : h < 17 ? 'Good afternoon,' : 'Good evening,'
+  }, [])
 
   return (
     <div>
-      <div className="cw-banner cw-banner--sprint" style={{ padding: '26px 30px', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <div className="cw-eyebrow">Content Calendar</div>
-          <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>Calendar</h1>
-          <div className="cw-sub" style={{ marginTop: 2 }}>Plan and track every post, by platform, by day.</div>
+      <div className="cw-banner cw-banner--sprint" style={{ padding: '26px 30px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <div className="cw-eyebrow">{greeting} {displayName}</div>
+            <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>Calendar</h1>
+            <div className="cw-sub" style={{ marginTop: 2 }}>Plan and track every post, by channel, by day.</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w - 1)}>←</button>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: 'var(--on-canvas-1)', whiteSpace: 'nowrap' }}>{weekLabel}</div>
+            <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w + 1)}>→</button>
+            {weekOffset !== 0 && (
+              <button className="cw-btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setWeekOffset(0)}>Today</button>
+            )}
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w - 1)}>←</button>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: 'var(--on-canvas-1)', whiteSpace: 'nowrap' }}>{weekLabel}</div>
-          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w + 1)}>→</button>
-          {weekOffset !== 0 && (
-            <button className="cw-btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setWeekOffset(0)}>Today</button>
-          )}
+
+        <div className="cw-stat" style={{ marginTop: 20, flexDirection: 'row', gap: 32 }}>
+          <div>
+            <div className="cw-stat-value">{streakCount}</div>
+            <div className="cw-stat-label">Day Streak</div>
+          </div>
+          <div>
+            <div className="cw-stat-value">{daysPostedThisWeek}/7</div>
+            <div className="cw-stat-label">Days Posted, Last 7</div>
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, overflowX: 'auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '140px repeat(7, minmax(140px, 1fr))', gap: 8, minWidth: 900 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '160px repeat(7, minmax(140px, 1fr))', gap: 8, minWidth: 940 }}>
             <div />
             {weekDates.map((d, i) => {
               const isToday = toDateStr(d) === todayStr
@@ -89,14 +119,14 @@ export default function Calendar() {
               )
             })}
 
-            {PLATFORMS.map(platform => (
-              <React.Fragment key={platform.key}>
+            {channels.map(channel => (
+              <React.Fragment key={channel.id}>
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 700, color: 'var(--on-canvas-2)' }}>
-                  {platform.label}
+                  {channel.label}
                 </div>
                 {weekDates.map((d, i) => {
                   const dateStr = toDateStr(d)
-                  const items = piecesFor(platform.key, dateStr)
+                  const items = piecesFor(channel.id, dateStr)
                   return (
                     <div key={i} className="cw-card-flat" style={{ padding: 8, minHeight: 100, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {items.map(piece => {
@@ -121,7 +151,7 @@ export default function Calendar() {
                       <button
                         className="cw-btn-ghost"
                         style={{ fontSize: 11, padding: '5px 8px', marginTop: 'auto' }}
-                        onClick={() => setModalState({ initial: { platform: platform.key, scheduled_date: dateStr, stage: 'scheduled' } })}
+                        onClick={() => setModalState({ initial: { channel_id: channel.id, scheduled_date: dateStr, stage: 'scheduled' } })}
                       >
                         + Add
                       </button>

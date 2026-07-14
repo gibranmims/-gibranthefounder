@@ -6,13 +6,15 @@ import { extractFolderId } from '../lib/googleDrive'
 const DRIVE_API_KEY_SET = Boolean(import.meta.env.VITE_GOOGLE_DRIVE_API_KEY)
 
 export default function Settings() {
-  const { displayName, driveFolderId, updateProfile } = useApp()
+  const { displayName, driveFolderId, updateProfile, channels, addChannel, updateChannel, deleteChannel, moveChannel } = useApp()
   const [name, setName] = useState(displayName || '')
   const [folderInput, setFolderInput] = useState(driveFolderId || '')
   const [saved, setSaved] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [passwordSaved, setPasswordSaved] = useState(false)
+  const [newChannel, setNewChannel] = useState('')
+  const [channelEdits, setChannelEdits] = useState({})
 
   useEffect(() => {
     setName(displayName || '')
@@ -27,6 +29,26 @@ export default function Settings() {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
+  }
+
+  async function handleAddChannel() {
+    if (!newChannel.trim()) return
+    await addChannel(newChannel.trim())
+    setNewChannel('')
+  }
+
+  function handleChannelLabelChange(id, value) {
+    setChannelEdits(prev => ({ ...prev, [id]: value }))
+  }
+
+  async function handleChannelLabelBlur(id) {
+    const value = channelEdits[id]
+    if (value === undefined) return
+    const current = channels.find(c => c.id === id)
+    if (value.trim() && value.trim() !== current?.label) {
+      await updateChannel(id, { label: value.trim() })
+    }
+    setChannelEdits(prev => { const next = { ...prev }; delete next[id]; return next })
   }
 
   async function handleSetPassword() {
@@ -59,6 +81,41 @@ export default function Settings() {
           <div>
             <label className="cw-label">Display name</label>
             <input className="cw-input" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your first name" />
+          </div>
+        </div>
+
+        <div className="cw-card" style={{ padding: 24 }}>
+          <div className="cw-label">Calendar Channels</div>
+          <div style={{ fontSize: 13, color: 'var(--on-surface-3)', marginBottom: 16 }}>
+            These are the rows on your Calendar grid. Add, rename, reorder, or remove them.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {channels.map((c, i) => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  className="cw-input"
+                  type="text"
+                  value={channelEdits[c.id] ?? c.label}
+                  onChange={e => handleChannelLabelChange(c.id, e.target.value)}
+                  onBlur={() => handleChannelLabelBlur(c.id)}
+                  style={{ flex: 1 }}
+                />
+                <button className="cw-btn-ghost" style={{ padding: '9px 10px' }} disabled={i === 0} onClick={() => moveChannel(c.id, 'up')}>↑</button>
+                <button className="cw-btn-ghost" style={{ padding: '9px 10px' }} disabled={i === channels.length - 1} onClick={() => moveChannel(c.id, 'down')}>↓</button>
+                <button className="cw-btn-danger" style={{ padding: '9px 10px' }} onClick={() => deleteChannel(c.id)}>Delete</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              className="cw-input"
+              type="text"
+              value={newChannel}
+              onChange={e => setNewChannel(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddChannel() }}
+              placeholder="New channel name..."
+            />
+            <button className="cw-btn-primary" onClick={handleAddChannel} style={{ flexShrink: 0 }}>+ Add</button>
           </div>
         </div>
 

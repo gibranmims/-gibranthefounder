@@ -5,19 +5,18 @@ import { AppProvider } from './lib/AppContext'
 import { initGlow } from './lib/glow'
 import Sidebar from './components/Sidebar'
 import Auth from './pages/Auth'
-import Dashboard from './pages/Dashboard'
 import Buckets from './pages/Buckets'
 import Calendar from './pages/Calendar'
 import Ideas from './pages/Ideas'
 import Vision from './pages/Vision'
 import Settings from './pages/Settings'
 
-const PAGES = { dashboard: Dashboard, buckets: Buckets, calendar: Calendar, ideas: Ideas, vision: Vision, settings: Settings }
+const PAGES = { calendar: Calendar, buckets: Buckets, ideas: Ideas, vision: Vision, settings: Settings }
 
 export default function App() {
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [page, setPage] = useState('dashboard')
+  const [page, setPage] = useState('calendar')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,7 +43,7 @@ export default function App() {
 
   if (!session) return <Auth />
 
-  const Page = PAGES[page] || Dashboard
+  const Page = PAGES[page] || Calendar
 
   return (
     <AppProvider userId={session.user.id} user={session.user}>

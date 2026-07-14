@@ -44,21 +44,29 @@ exception when duplicate_object then null;
 end $$;
 
 do $$ begin
-  create type content_platform as enum ('shortform', 'x_threads', 'linkedin');
-exception when duplicate_object then null;
-end $$;
-
-do $$ begin
   create type content_stage as enum ('idea', 'drafting', 'scheduled', 'posted');
 exception when duplicate_object then null;
 end $$;
+
+-- channels: user-editable rows for the Calendar grid (e.g. TikTok, Instagram Reels).
+-- Replaces the old fixed `platform` enum so the user can add/rename/reorder freely.
+create table if not exists channels (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  label text not null,
+  order_index integer not null default 0,
+  created_at timestamptz default now()
+);
+alter table channels enable row level security;
+create policy "Users can manage own channels"
+  on channels for all using (auth.uid() = user_id);
 
 create table if not exists content_pieces (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
   title text not null,
   quadrant content_quadrant not null,
-  platform content_platform not null,
+  channel_id uuid references channels(id) on delete set null,
   stage content_stage not null default 'idea',
   scheduled_date date,
   posted_date date,
@@ -91,3 +99,16 @@ create policy "Users can manage own ideas"
 
 -- Migration for existing databases (safe to re-run):
 -- alter table profile add column if not exists drive_ready_folder_id text default '';
+--
+-- create table if not exists channels (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users on delete cascade not null,
+--   label text not null,
+--   order_index integer not null default 0,
+--   created_at timestamptz default now()
+-- );
+-- alter table channels enable row level security;
+-- create policy "Users can manage own channels" on channels for all using (auth.uid() = user_id);
+--
+-- alter table content_pieces add column if not exists channel_id uuid references channels(id) on delete set null;
+-- alter table content_pieces alter column platform drop not null;

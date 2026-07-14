@@ -36,16 +36,6 @@ export function quadrantMeta(key) {
   return QUADRANTS.find(q => q.key === key) || QUADRANTS[0]
 }
 
-export const PLATFORMS = [
-  { key: 'shortform', label: 'Short-Form Video' },
-  { key: 'x_threads', label: 'X / Threads' },
-  { key: 'linkedin', label: 'LinkedIn' },
-]
-
-export function platformLabel(key) {
-  return PLATFORMS.find(p => p.key === key)?.label || key
-}
-
 export const STAGES = [
   { key: 'idea', label: 'Idea' },
   { key: 'drafting', label: 'Drafting' },

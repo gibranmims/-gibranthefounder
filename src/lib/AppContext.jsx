@@ -17,6 +17,8 @@ function isYesterday(dateStr, today) {
   return diff === 1
 }
 
+const DEFAULT_CHANNELS = ['TikTok', 'Instagram Reels', 'Instagram Static/Carousel', 'Threads/X', 'LinkedIn']
+
 export function AppProvider({ children, userId, user }) {
   const emailPrefix = user?.email?.split('@')[0] || 'there'
   const fallbackName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
@@ -31,13 +33,14 @@ export function AppProvider({ children, userId, user }) {
   const [lastActivityDate, setLastActivityDate] = useState(null)
   const [contentPieces, setContentPieces] = useState([])
   const [ideas, setIdeas] = useState([])
+  const [channels, setChannels] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (userId) loadAll() }, [userId])
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas()])
+    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels()])
     setLoading(false)
   }
 
@@ -63,6 +66,17 @@ export function AppProvider({ children, userId, user }) {
   async function loadIdeas() {
     const { data } = await supabase.from('ideas').select('*').eq('user_id', userId).order('created_at', { ascending: false })
     setIdeas(data || [])
+  }
+
+  async function loadChannels() {
+    const { data } = await supabase.from('channels').select('*').eq('user_id', userId).order('order_index', { ascending: true })
+    if (!data || data.length === 0) {
+      const rows = DEFAULT_CHANNELS.map((label, i) => ({ user_id: userId, label, order_index: i }))
+      const { data: seeded } = await supabase.from('channels').insert(rows).select()
+      setChannels((seeded || []).sort((a, b) => a.order_index - b.order_index))
+      return
+    }
+    setChannels(data)
   }
 
   // ── PROFILE ──
@@ -106,7 +120,7 @@ export function AppProvider({ children, userId, user }) {
       user_id: userId,
       title: idea.text,
       quadrant: 'creator_psychology',
-      platform: 'shortform',
+      channel_id: channels[0]?.id || null,
       stage: 'idea',
     }).select().single()
     if (!error && data) {
@@ -139,6 +153,36 @@ export function AppProvider({ children, userId, user }) {
     setContentPieces(prev => prev.filter(c => c.id !== id))
   }
 
+  // ── CHANNELS ──
+  async function addChannel(label) {
+    const order_index = channels.length
+    const { data, error } = await supabase.from('channels').insert({ user_id: userId, label, order_index }).select().single()
+    if (!error && data) setChannels(prev => [...prev, data])
+  }
+  async function updateChannel(id, updates) {
+    await supabase.from('channels').update(updates).eq('id', id)
+    setChannels(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+  }
+  async function deleteChannel(id) {
+    await supabase.from('channels').delete().eq('id', id)
+    setChannels(prev => prev.filter(c => c.id !== id))
+  }
+  async function moveChannel(id, direction) {
+    const i = channels.findIndex(c => c.id === id)
+    const j = direction === 'up' ? i - 1 : i + 1
+    if (i < 0 || j < 0 || j >= channels.length) return
+    const a = channels[i], b = channels[j]
+    const reordered = [...channels]
+    reordered[i] = { ...b, order_index: a.order_index }
+    reordered[j] = { ...a, order_index: b.order_index }
+    reordered.sort((x, y) => x.order_index - y.order_index)
+    setChannels(reordered)
+    await Promise.all([
+      supabase.from('channels').update({ order_index: b.order_index }).eq('id', a.id),
+      supabase.from('channels').update({ order_index: a.order_index }).eq('id', b.id),
+    ])
+  }
+
   return (
     <AppContext.Provider value={{
       userId,
@@ -148,6 +192,7 @@ export function AppProvider({ children, userId, user }) {
       streakCount, lastActivityDate,
       contentPieces, addContentPiece, updateContentPiece, moveStage, deleteContentPiece,
       ideas, addIdea, deleteIdea, promoteIdea,
+      channels, addChannel, updateChannel, deleteChannel, moveChannel,
       loading,
     }}>
       {children}

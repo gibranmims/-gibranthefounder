@@ -1,17 +1,17 @@
 import React, { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Modal from './Modal'
-import { QUADRANTS, PLATFORMS, STAGES, EVAL_CRITERIA } from '../lib/philosophy'
+import { QUADRANTS, STAGES, EVAL_CRITERIA } from '../lib/philosophy'
 
 // Shared add/edit modal for a content piece. Pass `piece` to edit, or `initial`
-// (partial field values, e.g. { platform, scheduled_date }) to prefill a new one.
+// (partial field values, e.g. { channel_id, scheduled_date }) to prefill a new one.
 export default function ContentPieceModal({ piece, initial, onClose }) {
   const isEdit = !!piece
-  const { addContentPiece, updateContentPiece, deleteContentPiece } = useApp()
+  const { channels, addContentPiece, updateContentPiece, deleteContentPiece } = useApp()
 
   const [title, setTitle] = useState(piece?.title || initial?.title || '')
   const [quadrant, setQuadrant] = useState(piece?.quadrant || initial?.quadrant || QUADRANTS[0].key)
-  const [platform, setPlatform] = useState(piece?.platform || initial?.platform || PLATFORMS[0].key)
+  const [channelId, setChannelId] = useState(piece?.channel_id || initial?.channel_id || channels[0]?.id || '')
   const [stage, setStage] = useState(piece?.stage || initial?.stage || 'idea')
   const [scheduledDate, setScheduledDate] = useState(piece?.scheduled_date || initial?.scheduled_date || '')
   const [script, setScript] = useState(piece?.script || '')
@@ -28,7 +28,7 @@ export default function ContentPieceModal({ piece, initial, onClose }) {
     const payload = {
       title: title.trim(),
       quadrant,
-      platform,
+      channel_id: channelId || null,
       stage,
       scheduled_date: scheduledDate || null,
       script,
@@ -62,9 +62,9 @@ export default function ContentPieceModal({ piece, initial, onClose }) {
           </select>
         </div>
         <div style={{ flex: 1 }}>
-          <label className="cw-label">Platform</label>
-          <select className="cw-select" value={platform} onChange={e => setPlatform(e.target.value)}>
-            {PLATFORMS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+          <label className="cw-label">Channel</label>
+          <select className="cw-select" value={channelId} onChange={e => setChannelId(e.target.value)}>
+            {channels.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
         </div>
       </div>

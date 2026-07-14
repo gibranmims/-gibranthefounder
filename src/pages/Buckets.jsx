@@ -1,10 +1,14 @@
 import React, { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import ContentPieceModal from '../components/ContentPieceModal'
-import { QUADRANTS, quadrantMeta, PLATFORMS, platformLabel, STAGES } from '../lib/philosophy'
+import { QUADRANTS, quadrantMeta, STAGES } from '../lib/philosophy'
 
 export default function Buckets() {
-  const { contentPieces, moveStage } = useApp()
+  const { contentPieces, channels, moveStage } = useApp()
+
+  function channelLabel(id) {
+    return channels.find(c => c.id === id)?.label || 'No channel'
+  }
   const [quadrantFilter, setQuadrantFilter] = useState('all')
   const [newOpen, setNewOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -68,7 +72,7 @@ export default function Buckets() {
                       {piece.title}
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 6, marginBottom: 10 }}>
-                      <span className="cw-badge cw-badge-neutral">{platformLabel(piece.platform)}</span>
+                      <span className="cw-badge cw-badge-neutral">{channelLabel(piece.channel_id)}</span>
                       {piece.scheduled_date && <span className="cw-badge cw-badge-info">{piece.scheduled_date}</span>}
                     </div>
                     <div style={{ display: 'flex', gap: 6, paddingLeft: 6, flexWrap: 'wrap' }}>
