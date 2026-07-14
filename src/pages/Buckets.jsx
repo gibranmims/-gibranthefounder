@@ -28,7 +28,7 @@ export default function Buckets() {
         <div>
           <div className="cw-eyebrow">Content Buckets</div>
           <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>Buckets</h1>
-          <div className="cw-sub" style={{ marginTop: 2 }}>Every piece maps to one of the Four Quadrants. Move it through the pipeline.</div>
+          <div className="cw-sub" style={{ marginTop: 2 }}>Every piece maps to one of the Four Content Pillars. Move it through the pipeline.</div>
         </div>
         <button className="cw-btn-primary" onClick={() => setNewOpen(true)}>+ New Piece</button>
       </div>
@@ -39,7 +39,7 @@ export default function Buckets() {
           onClick={() => setQuadrantFilter('all')}
           style={quadrantFilter === 'all' ? { background: 'var(--accent)', color: 'var(--accent-ink)', border: 'none' } : undefined}
         >
-          All Quadrants
+          All Pillars
         </button>
       </div>
 

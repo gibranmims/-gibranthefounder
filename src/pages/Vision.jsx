@@ -56,11 +56,12 @@ export default function Vision() {
         </div>
 
         <div className="cw-card" style={{ padding: 24 }}>
-          <div className="cw-label">The Four Content Quadrants</div>
+          <div className="cw-label">The Four Content Pillars</div>
           <div className="cw-grid-2">
             {QUADRANTS.map(q => (
               <div key={q.key} className="cw-card-flat" style={{ padding: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: q.color, marginBottom: 4 }}>{q.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: q.color, marginBottom: 2 }}>{q.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--on-surface-2)', marginBottom: 6 }}>{q.question}</div>
                 <div style={{ fontSize: 13, color: 'var(--on-surface-3)', lineHeight: 1.5 }}>{q.desc}</div>
               </div>
             ))}

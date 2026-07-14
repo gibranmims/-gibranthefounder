@@ -56,7 +56,7 @@ export default function ContentPieceModal({ piece, initial, onClose }) {
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
         <div style={{ flex: 1 }}>
-          <label className="cw-label">Quadrant</label>
+          <label className="cw-label">Pillar</label>
           <select className="cw-select" value={quadrant} onChange={e => setQuadrant(e.target.value)}>
             {QUADRANTS.map(q => <option key={q.key} value={q.key}>{q.label}</option>)}
           </select>

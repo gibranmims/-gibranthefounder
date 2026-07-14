@@ -4,7 +4,7 @@
 export const QUADRANTS = [
   {
     key: 'creator_psychology',
-    label: 'Creator Psychology',
+    label: 'Creator Mindset',
     question: 'How should I think?',
     color: 'var(--district-brand)',
     dim: 'var(--district-brand-dim)',
