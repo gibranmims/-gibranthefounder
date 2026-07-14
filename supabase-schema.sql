@@ -1,0 +1,89 @@
+-- Personal Brand OS — Supabase Schema
+-- Run this in the Supabase SQL Editor (new project, not shared with coworlds-os)
+
+-- Profile: single row per user
+create table if not exists profile (
+  id uuid references auth.users on delete cascade primary key,
+  display_name text,
+  positioning_statement text default '',
+  icp_notes text default '',
+  pillars_notes text default '',
+  gcal_embed_url text default '',
+  dark_mode boolean default false,
+  streak_count integer default 0,
+  last_activity_date date,
+  created_at timestamptz default now()
+);
+alter table profile enable row level security;
+create policy "Users can manage own profile"
+  on profile for all using (auth.uid() = id);
+
+-- Auto-create profile on signup
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profile (id)
+  values (new.id)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+
+-- content_pieces: the core table — one row per piece of content
+do $$ begin
+  create type content_quadrant as enum (
+    'creator_psychology', 'creator_business', 'content_that_converts', 'creator_os'
+  );
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type content_platform as enum ('shortform', 'x_threads', 'linkedin');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type content_stage as enum ('idea', 'drafting', 'scheduled', 'posted');
+exception when duplicate_object then null;
+end $$;
+
+create table if not exists content_pieces (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  title text not null,
+  quadrant content_quadrant not null,
+  platform content_platform not null,
+  stage content_stage not null default 'idea',
+  scheduled_date date,
+  posted_date date,
+  notes text default '',
+  script text default '',
+  doc_link text default '',
+  score_belief_shift integer,
+  score_novelty integer,
+  score_curiosity integer,
+  score_authority integer,
+  score_business_relevance integer,
+  score_conversion_potential integer,
+  score_discussion_potential integer,
+  created_at timestamptz default now()
+);
+alter table content_pieces enable row level security;
+create policy "Users can manage own content pieces"
+  on content_pieces for all using (auth.uid() = user_id);
+
+-- ideas: flat quick-capture bank, promotable to content_pieces
+create table if not exists ideas (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  text text not null,
+  created_at timestamptz default now()
+);
+alter table ideas enable row level security;
+create policy "Users can manage own ideas"
+  on ideas for all using (auth.uid() = user_id);

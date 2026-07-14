@@ -1,0 +1,370 @@
+/* ════════════════════════════════════════════════════════════════════
+   COWORLDS SYSTEM v2 — the ONLY place components are defined.
+   Consumes tokens from index.css :root. New UI uses these classes;
+   never re-declare a card/button/input inline.
+
+   Blur budget: backdrop-filter lives ONLY in .cw-card / .cw-banner /
+   .cw-table-wrap (page-level panes). Nested surfaces are flat.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Layout grids — responsive by default ── */
+.cw-cockpit {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 12px;
+  align-items: start;
+}
+.cw-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.cw-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .cw-cockpit { grid-template-columns: 1fr; }
+  .cw-grid-3  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .cw-grid-3, .cw-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Interactive-card hover — apply .cw-hover to clickable cards */
+.cw-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cw-hover:hover {
+  transform: translateY(-2px);
+  border-color: var(--stroke-2);
+  box-shadow: 0 28px 56px rgba(8, 12, 24, 0.45), var(--glass-inset);
+}
+.cw-hover:active { transform: translateY(0) scale(0.995); }
+
+/* ── Cards ── */
+.cw-card {
+  background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--stroke-1);
+  border-radius: 16px;
+  box-shadow: var(--shadow-night), var(--glass-inset);
+  color: var(--on-surface-1);
+}
+/* nested/secondary panel — NO blur */
+.cw-card-flat {
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-1);
+  border-radius: 12px;
+  color: var(--on-surface-1);
+}
+/* hub banner — dark glass + horizon glow */
+.cw-banner {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, rgba(30, 42, 68, 0.85), rgba(52, 52, 96, 0.75) 60%, rgba(90, 66, 120, 0.70));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--stroke-1);
+  border-radius: 20px;
+  box-shadow: var(--shadow-night), var(--glass-inset);
+}
+.cw-banner::after {
+  content: '';
+  position: absolute;
+  left: -10%; right: -10%; bottom: -55%; height: 90%;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 179, 217, 0.18) 0%, rgba(168, 200, 240, 0.10) 40%, transparent 70%);
+  pointer-events: none;
+}
+/* District variants — each area of the world has its own horizon light */
+.cw-banner--pipeline::after {
+  background: radial-gradient(ellipse at 50% 100%, rgba(168, 200, 240, 0.22) 0%, rgba(122, 168, 255, 0.10) 40%, transparent 70%);
+}
+.cw-banner--pipeline .cw-eyebrow { color: var(--district-pipeline); }
+.cw-banner--content::after {
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 179, 217, 0.22) 0%, rgba(249, 168, 212, 0.10) 40%, transparent 70%);
+}
+.cw-banner--content .cw-eyebrow { color: var(--district-content); }
+.cw-banner--brand::after {
+  background: radial-gradient(ellipse at 50% 100%, rgba(196, 181, 253, 0.22) 0%, rgba(227, 217, 250, 0.10) 40%, transparent 70%);
+}
+.cw-banner--brand .cw-eyebrow { color: var(--district-brand); }
+.cw-banner--sprint::after {
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 194, 158, 0.22) 0%, rgba(253, 186, 116, 0.10) 40%, transparent 70%);
+}
+.cw-banner--sprint .cw-eyebrow { color: var(--district-sprint); }
+
+/* Live stat band — hub dashboards */
+.cw-stat {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cw-stat .cw-stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.6vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--on-surface-1);
+  font-variant-numeric: tabular-nums;
+}
+.cw-stat .cw-stat-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--on-surface-3);
+}
+
+/* ── Type ── */
+.cw-title {
+  color: var(--on-canvas-1);
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+/* labs.css resets `.cl h1 { font-weight: inherit }` at (0,1,1) specificity,
+   which silently beats lone-class titles inside the labs scope. These
+   (0,2,0)+ rules guarantee page titles are IDENTICAL everywhere. */
+.cl .cw-title, .cl .chrome-header,
+.cl h1.cw-title, .cl h1.chrome-header {
+  color: var(--on-canvas-1);
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+.cw-sub {
+  color: var(--on-canvas-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.cw-eyebrow {
+  color: var(--link);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.cw-label {
+  display: block;
+  color: var(--on-surface-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.cw-divider {
+  border: none;
+  border-top: 1px solid var(--stroke-1);
+  margin: 16px 0;
+}
+
+/* ── Buttons ── */
+.cw-btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font: 650 15px/1 var(--font-display);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.cw-btn-primary:hover { background: var(--accent-hover); }
+.cw-btn-primary:active { transform: scale(0.97); }
+.cw-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.cw-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: transparent;
+  color: var(--on-surface-2);
+  border: 1px solid var(--stroke-1);
+  border-radius: 999px;
+  padding: 9px 20px;
+  font: 600 14px/1 var(--font-sans);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.cw-btn-ghost:hover {
+  border-color: var(--stroke-2);
+  color: var(--on-surface-1);
+  background: var(--surface-2);
+}
+
+.cw-btn-danger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--danger-dim);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.30);
+  border-radius: 999px;
+  padding: 9px 20px;
+  font: 600 14px/1 var(--font-sans);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.cw-btn-danger:hover { background: rgba(248, 113, 113, 0.22); }
+
+/* ── Inputs (recipe; the .dark-world !important block enforces colors) ── */
+.cw-input, .cw-select, .cw-textarea {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font: 400 15px/1.5 var(--font-sans);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.cw-textarea { resize: vertical; min-height: 90px; }
+
+/* ── Chips & badges ── */
+.cw-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface-2);
+  color: var(--on-surface-2);
+  border: 1px solid var(--stroke-1);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cw-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.cw-badge-ok      { background: var(--ok-dim);      color: var(--ok); }
+.cw-badge-warn    { background: var(--warn-dim);    color: var(--warn); }
+.cw-badge-danger  { background: var(--danger-dim);  color: var(--danger); }
+.cw-badge-info    { background: var(--info-dim);    color: var(--info); }
+.cw-badge-neutral { background: var(--neutral-dim); color: var(--on-surface-2); }
+
+/* ── Table ── */
+.cw-table-wrap {
+  background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--stroke-1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.cw-table { width: 100%; border-collapse: collapse; }
+.cw-table thead th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--on-surface-3);
+  border-bottom: 1px solid var(--stroke-1);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.cw-table tbody tr { border-bottom: 1px solid var(--stroke-1); }
+.cw-table tbody tr:last-child { border-bottom: none; }
+.cw-table tbody tr:hover { background: var(--surface-2); }
+.cw-table tbody td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--on-surface-1);
+  vertical-align: middle;
+}
+
+/* ── Modal — opaque, never glass-on-glass ── */
+.cw-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(6, 10, 20, 0.60);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.cw-modal {
+  background: var(--surface-solid);
+  border: 1px solid var(--stroke-2);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-night);
+  color: var(--on-surface-1);
+}
+.cw-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--stroke-1);
+  position: sticky; top: 0;
+  background: var(--surface-solid);
+  z-index: 1;
+}
+.cw-modal-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--on-surface-1);
+  letter-spacing: -0.03em;
+}
+.cw-modal-body { padding: 22px 24px; }
+
+/* ── The Glow — foundational cursor light ─────────────────────────────
+   Every system card carries a gentle border glow that follows the cursor
+   (hue rides sky → lavender → pink with cursor X — the district palette).
+   Driven by ONE global listener in src/lib/glow.js (initGlow, mounted by
+   Layout/AdminLayout); it sets --glow-x/--glow-y locally per element and
+   --glow-hue on :root. New cards get this automatically by using
+   .cw-card / .cw-hover — never hand-roll a glow. NOTE: only the
+   -webkit-mask form renders the ring in Blink/WebKit; Firefox silently
+   skips it (cards unchanged). .cw-banner keeps its ::after horizon glow,
+   so banners take the ring on ::before only. */
+.cw-card, .cw-hover, .cw-table-wrap, [data-glow-card] { position: relative; }
+
+.cw-card::before, .cw-hover::before, .cw-table-wrap::before, [data-glow-card]::before,
+.cw-card::after,  .cw-hover::after,  .cw-table-wrap::after,  [data-glow-card]::after,
+.cw-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: radial-gradient(
+    240px 240px at var(--glow-x, -9999px) var(--glow-y, -9999px),
+    hsl(var(--glow-hue, 270) 84% 76% / 0.75), transparent 62%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.cw-card::after, .cw-hover::after, .cw-table-wrap::after, [data-glow-card]::after {
+  padding: 2.5px;
+  filter: blur(7px);
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: reduce), (hover: none) {
+  .cw-card::before, .cw-hover::before, .cw-table-wrap::before, [data-glow-card]::before,
+  .cw-card::after,  .cw-hover::after,  .cw-table-wrap::after,  [data-glow-card]::after,
+  .cw-banner::before { display: none; }
+}
+
+/* ── Empty state ── */
+.cw-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 64px 24px;
+  gap: 10px;
+  text-align: center;
+}
+.cw-empty .cw-empty-title { font-size: 15px; font-weight: 600; color: var(--on-surface-1); }
+.cw-empty .cw-empty-sub   { font-size: 14px; color: var(--on-surface-3); max-width: 340px; }

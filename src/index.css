@@ -1,0 +1,362 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.cw-search-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   COWORLDS DESIGN TOKENS v2 — TRUE DARK UI
+   ONE source of truth. Hex values live ONLY here and in
+   tailwind.config.js (mirrored pair — change both together).
+   Component recipes live in src/styles/system.css (.cw-*).
+
+   WORLD RULE: everything inside Layout/AdminLayout is the dark world.
+   Light world (untouched): /login, /signup, /intake, App boot screen,
+   PrintInvoice, generated portfolio sites.
+
+   TEXT RULE: on canvas → --on-canvas-*; inside cards → --on-surface-*;
+   navy #223047 text is legal ONLY on pink fills (--accent-ink).
+   Run `npm run design:check` before committing.
+   ════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ═ PRIMITIVES ═ */
+  --navy-950: #141d2f;
+  --navy-900: #1c2940;
+  --navy-800: #223047;
+  --navy-700: #2c3c5c;
+  --indigo-600: #45447c;
+  --plum-500: #6a5290;
+  --pink-300: #ffb3d9;
+  --pink-200: #ffc9e4;
+  --sky-300: #a8c8f0;
+  --sky-200: #cfe2fa;
+  --sky-500: #3b8bd9;
+  --green-400: #4ade80;
+  --amber-400: #fbbf24;
+  --red-400: #f87171;
+  --orange-300: #fdba74;
+  --blue-300: #7aa8ff;
+  --purple-300: #c4b5fd;
+  --cyan-300: #67e8f9;
+  --rose-300: #f9a8d4;
+
+  /* ═ CANVAS — the dusk world ═ */
+  --color-bg: #1c2940;
+  --sky-canvas: linear-gradient(180deg, #1c2940 0%, #223047 32%, #45447c 78%, #6a5290 100%);
+  --on-canvas-1: rgba(255, 255, 255, 0.95);
+  --on-canvas-2: rgba(255, 255, 255, 0.66);
+  --on-canvas-3: rgba(255, 255, 255, 0.48);
+  --canvas-text:   var(--on-canvas-1);
+  --canvas-text-2: var(--on-canvas-2);
+  --canvas-text-3: var(--on-canvas-3);
+
+  /* ═ SURFACES — dark glass ═ */
+  --surface-1: rgba(30, 42, 68, 0.75);      /* THE card */
+  --surface-2: rgba(255, 255, 255, 0.06);   /* nested wells — no blur */
+  --surface-3: rgba(255, 255, 255, 0.11);   /* hover / raised rows */
+  --surface-solid: #232f4a;                 /* modals, dropdowns, sticky */
+  --on-surface-1: rgba(255, 255, 255, 0.95);
+  --on-surface-2: rgba(255, 255, 255, 0.72);
+  --on-surface-3: rgba(255, 255, 255, 0.55);
+  --stroke-1: rgba(255, 255, 255, 0.14);
+  --stroke-2: rgba(255, 255, 255, 0.28);
+
+  /* ═ GLASS RECIPE ═ */
+  --glass-bg: var(--surface-1);
+  --glass-border: var(--stroke-1);
+  --glass-blur: blur(18px) saturate(1.2);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-night: 0 24px 48px rgba(8, 12, 24, 0.35);
+
+  /* ═ ACCENTS ═ */
+  --accent: var(--pink-300);       /* CTA fill ONLY, never text */
+  --accent-hover: var(--pink-200);
+  --accent-ink: #223047;           /* the ONLY sanctioned navy text = on pink */
+  --accent-dim: rgba(255, 179, 217, 0.14);
+  --link: var(--sky-300);
+  --link-hover: var(--sky-200);
+
+  /* ═ STATUS — dark-legible ═ */
+  --ok: var(--green-400);
+  --ok-dim: rgba(74, 222, 128, 0.14);
+  --warn: var(--amber-400);
+  --warn-dim: rgba(251, 191, 36, 0.14);
+  --danger: var(--red-400);
+  --danger-dim: rgba(248, 113, 113, 0.14);
+  --info: var(--blue-300);
+  --info-dim: rgba(122, 168, 255, 0.14);
+  --neutral-dim: rgba(255, 255, 255, 0.10);
+
+  /* ═ INPUTS ═ */
+  --input-bg: rgba(10, 16, 30, 0.35);
+  --input-text: rgba(255, 255, 255, 0.95);
+  --input-border: rgba(255, 255, 255, 0.16);
+  --input-placeholder: rgba(255, 255, 255, 0.40);
+  --input-focus-border: rgba(168, 200, 240, 0.55);
+  --input-focus-ring: 0 0 0 3px rgba(168, 200, 240, 0.16);
+
+  /* ═ LIGHT WORLD reference (auth/boot/print ONLY — never in dark pages) ═ */
+  --lw-surface: #ffffff;
+  --lw-ink: #223047;
+  --lw-ink-2: #4e5b6e;
+  --lw-ink-3: #68758a;
+  --lw-border: rgba(34, 48, 71, 0.15);
+  --lw-link: #1d62b8;
+
+  /* ═ Living Sky (kept) ═ */
+  --sky-ambient-1: rgba(120, 150, 255, 0.16);
+  --sky-ambient-2: rgba(255, 179, 217, 0.10);
+  --sky-wash: rgba(120, 150, 255, 0.14);
+  --cloud-scale: 0.85;
+
+  /* ═ Districts — each area of the world has its light ═ */
+  --district-pipeline: #a8c8f0;   /* sky      — Deal Flow */
+  --district-content:  #ffb3d9;   /* pink     — Conversion Labs / Content */
+  --district-brand:    #c4b5fd;   /* lavender — My Brand */
+  --district-sprint:   #ffc29e;   /* peach    — My Sprint */
+  --district-pipeline-dim: rgba(168, 200, 240, 0.14);
+  --district-content-dim:  rgba(255, 179, 217, 0.14);
+  --district-brand-dim:    rgba(196, 181, 253, 0.14);
+  --district-sprint-dim:   rgba(255, 194, 158, 0.14);
+
+  /* ═ Dusk chrome stops (kept) ═ */
+  --dusk-1: #223047;
+  --dusk-2: #45447c;
+  --dusk-3: #8e63a8;
+
+  /* ═ Type & radii ═ */
+  --font-display: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 16px;
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --sidebar-width: 240px;
+}
+
+/* ── Signature gradients ───────────────────────────────────────────── */
+.bg-dream {
+  background-image: linear-gradient(174deg, #c7e3ff, #e3d9fa 60%, #ffe3f0);
+}
+.bg-dusk {
+  background-image: linear-gradient(165deg, var(--dusk-1), var(--dusk-2) 55%, var(--dusk-3));
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Body — the dusk world ─────────────────────────────────────────── */
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--sky-canvas) fixed;
+  background-color: #1c2940;
+  color: var(--on-canvas-1);
+  font-size: 16px;
+  line-height: 1.625;
+  overflow-x: hidden;
+  transition: background 2s ease;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+button, a, [role="button"] {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 3px;
+}
+
+/* ── Form controls — dark world only; !important beats inline styles.
+   Auth / intake / print (outside .dark-world) are untouched. ───────── */
+input, select, textarea { outline: none; }
+
+@media screen {
+  .dark-world input, .dark-world input[type="text"], .dark-world input[type="email"],
+  .dark-world input[type="password"], .dark-world input[type="search"],
+  .dark-world input[type="number"], .dark-world input[type="url"], .dark-world input[type="tel"],
+  .dark-world select, .dark-world textarea {
+    background: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border-color: var(--input-border) !important;
+    font-size: 15px !important;
+    color-scheme: dark;
+  }
+  .dark-world input::placeholder, .dark-world textarea::placeholder {
+    color: var(--input-placeholder) !important;
+  }
+  .dark-world option { background: var(--surface-solid); color: var(--input-text); }
+  .dark-world input:focus, .dark-world select:focus, .dark-world textarea:focus {
+    border-color: var(--input-focus-border) !important;
+    box-shadow: var(--input-focus-ring) !important;
+    outline: none;
+  }
+}
+
+/* ── Ambient washes + dusk-sky texture ─────────────────────────────── */
+#cw-ambient {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 8%  8%,  var(--sky-ambient-1) 0%, transparent 65%),
+    radial-gradient(ellipse 65% 70% at 92% 92%, var(--sky-ambient-2) 0%, transparent 65%);
+  transition: background 2s ease;
+}
+#cw-ambient::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: url('/images/world/dusk-sky.jpg') center / cover no-repeat;
+  opacity: 0.12;
+  mix-blend-mode: luminosity;
+}
+
+/* ── Sky phases — the horizon breathes with the day ───────────────── */
+html[data-sky="dawn"] {
+  --sky-canvas:    linear-gradient(180deg, #1c2940 0%, #223047 30%, #4a4578 72%, #a06a8c 100%);
+  --sky-ambient-1: rgba(255, 179, 217, 0.14);
+  --sky-ambient-2: rgba(255, 194, 158, 0.12);
+  --sky-wash:      rgba(255, 179, 217, 0.14);
+  --cloud-scale:   0.95;
+}
+html[data-sky="golden"] {
+  --sky-canvas:    linear-gradient(180deg, #1e2a42 0%, #263352 30%, #4a4578 70%, #9c6a7e 100%);
+  --sky-ambient-1: rgba(255, 194, 158, 0.16);
+  --sky-ambient-2: rgba(255, 179, 217, 0.12);
+  --sky-wash:      rgba(255, 194, 158, 0.15);
+  --cloud-scale:   1;
+}
+/* ── Altitude bands — the climb changes the world ─────────────────── */
+html[data-altitude="high"] {
+  --sky-wash: rgba(168, 200, 240, 0.18);
+}
+html[data-altitude="above"] {
+  --sky-wash: rgba(255, 179, 217, 0.16);
+  --sky-ambient-1: rgba(168, 200, 240, 0.22);
+  --cloud-scale: 1.15; /* denser cloud sea below you */
+}
+
+html[data-sky="dusk"] {
+  --sky-canvas:    linear-gradient(180deg, #161f33 0%, #1c2940 34%, #3c3a68 78%, #5c4a82 100%);
+  --sky-ambient-1: rgba(120, 150, 255, 0.14);
+  --sky-ambient-2: rgba(227, 217, 250, 0.10);
+  --sky-wash:      rgba(120, 150, 255, 0.12);
+  --cloud-scale:   0.7;
+}
+
+/* ── Legacy classes (absorbed by the system — same recipes as .cw-*) ── */
+
+/* = .cw-btn-primary (system.css). Kept for 13 existing consumers. */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent);
+  color: var(--accent-ink); border: none; border-radius: 999px;
+  font-weight: 650; font-family: var(--font-display);
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  letter-spacing: 0;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* = .cw-btn-ghost (system.css). Kept for 10 existing consumers. */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--stroke-1);
+  border-radius: 999px; color: var(--on-surface-2);
+  cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  display: inline-flex; align-items: center;
+  font-family: var(--font-sans); font-weight: 600;
+}
+.btn-secondary:hover {
+  border-color: var(--stroke-2);
+  color: var(--on-surface-1);
+  background: var(--surface-2);
+}
+
+/* ── Utilities ──────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #e3d9fa 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.pulse-border { animation: pulseBorder 4s ease-in-out infinite; }
+
+/* COWORLDS sidebar logo */
+.coworlds-logo {
+  color: #ffffff;
+  font-family: var(--font-display);
+}
+
+/* Page h1 — alias of .cw-title (system.css). 15 existing consumers. */
+.chrome-header {
+  color: var(--on-canvas-1);
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+/* Eyebrow — sky numerals on dark */
+.eyebrow {
+  font-size: 0.9375rem; font-weight: 600;
+  letter-spacing: 0.02em; text-transform: uppercase;
+  color: var(--link);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────────────── */
+@keyframes pulseBorder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 200, 240, 0); }
+  50%       { box-shadow: 0 0 0 4px rgba(168, 200, 240, 0.14); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+@keyframes slideUp {
+  from { transform: translateY(36px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer-fade {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+/* Boot ceremony — the chrome logo rises, then light sweeps the metal */
+@keyframes boot-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes boot-shine {
+  0%        { background-position: 180% 0; }
+  55%, 100% { background-position: -120% 0; }
+}
+@keyframes cloud-drift {
+  from { transform: translateX(-45vw); }
+  to   { transform: translateX(115vw); }
+}
+.cloud-drift {
+  animation-name: cloud-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cloud-drift { animation: none; }
+}
