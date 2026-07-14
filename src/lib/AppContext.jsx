@@ -34,13 +34,14 @@ export function AppProvider({ children, userId, user }) {
   const [contentPieces, setContentPieces] = useState([])
   const [ideas, setIdeas] = useState([])
   const [channels, setChannels] = useState([])
+  const [sprintItems, setSprintItems] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (userId) loadAll() }, [userId])
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels()])
+    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels(), loadSprintItems()])
     setLoading(false)
   }
 
@@ -81,6 +82,11 @@ export function AppProvider({ children, userId, user }) {
       return
     }
     setChannels(data)
+  }
+
+  async function loadSprintItems() {
+    const { data } = await supabase.from('sprint_items').select('*').eq('user_id', userId).order('created_at', { ascending: true })
+    setSprintItems(data || [])
   }
 
   // ── PROFILE ──
@@ -187,6 +193,30 @@ export function AppProvider({ children, userId, user }) {
     ])
   }
 
+  // ── SPRINT ITEMS ──
+  async function addSprintItem(text) {
+    const { data, error } = await supabase.from('sprint_items').insert({ text, user_id: userId }).select().single()
+    if (!error && data) setSprintItems(prev => [...prev, data])
+  }
+  async function toggleSprintItem(id) {
+    const item = sprintItems.find(i => i.id === id)
+    if (!item) return
+    const done = !item.done
+    await supabase.from('sprint_items').update({ done }).eq('id', id)
+    setSprintItems(prev => prev.map(i => i.id === id ? { ...i, done } : i))
+    if (done) bumpStreak()
+  }
+  async function deleteSprintItem(id) {
+    await supabase.from('sprint_items').delete().eq('id', id)
+    setSprintItems(prev => prev.filter(i => i.id !== id))
+  }
+  async function clearDoneSprintItems() {
+    const doneIds = sprintItems.filter(i => i.done).map(i => i.id)
+    if (!doneIds.length) return
+    await supabase.from('sprint_items').delete().in('id', doneIds)
+    setSprintItems(prev => prev.filter(i => !i.done))
+  }
+
   return (
     <AppContext.Provider value={{
       userId,
@@ -197,6 +227,7 @@ export function AppProvider({ children, userId, user }) {
       contentPieces, addContentPiece, updateContentPiece, moveStage, deleteContentPiece,
       ideas, addIdea, deleteIdea, promoteIdea,
       channels, addChannel, updateChannel, deleteChannel, moveChannel,
+      sprintItems, addSprintItem, toggleSprintItem, deleteSprintItem, clearDoneSprintItems,
       loading,
     }}>
       {children}

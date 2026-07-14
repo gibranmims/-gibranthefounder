@@ -1,5 +1,5 @@
 import React from 'react'
-import { CalendarDays, KanbanSquare, Lightbulb, Compass, Settings as SettingsIcon } from 'lucide-react'
+import { CalendarDays, KanbanSquare, Lightbulb, Compass, Flame, Settings as SettingsIcon } from 'lucide-react'
 import { useApp } from '../lib/AppContext'
 
 const ACTIVE_BG   = 'var(--accent)'
@@ -9,6 +9,7 @@ const SIDEBAR_BG  = 'linear-gradient(180deg, #141d2f 0%, #1c2940 35%, #333056 75
 
 const NAV_GROUPS = [
   { label: 'Daily',     items: [{ id: 'calendar', label: 'Calendar', Icon: CalendarDays }] },
+  { label: 'Sprint',    items: [{ id: 'sprint', label: 'Content Sprint', Icon: Flame }] },
   { label: 'Content',   items: [{ id: 'buckets', label: 'Buckets', Icon: KanbanSquare }] },
   { label: 'Capture',   items: [{ id: 'ideas', label: 'Idea Bank', Icon: Lightbulb }] },
   { label: 'Reference', items: [{ id: 'vision', label: 'Vision', Icon: Compass }] },

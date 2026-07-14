@@ -7,11 +7,12 @@ import Sidebar from './components/Sidebar'
 import Auth from './pages/Auth'
 import Buckets from './pages/Buckets'
 import Calendar from './pages/Calendar'
+import Sprint from './pages/Sprint'
 import Ideas from './pages/Ideas'
 import Vision from './pages/Vision'
 import Settings from './pages/Settings'
 
-const PAGES = { calendar: Calendar, buckets: Buckets, ideas: Ideas, vision: Vision, settings: Settings }
+const PAGES = { calendar: Calendar, sprint: Sprint, buckets: Buckets, ideas: Ideas, vision: Vision, settings: Settings }
 
 export default function App() {
   const [session, setSession] = useState(null)

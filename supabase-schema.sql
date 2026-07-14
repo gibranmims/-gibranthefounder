@@ -98,6 +98,19 @@ alter table ideas enable row level security;
 create policy "Users can manage own ideas"
   on ideas for all using (auth.uid() = user_id);
 
+-- sprint_items: "shit I'm about to record" — a simple checklist for an active
+-- recording session, separate from Idea Bank. No dates/lifecycle, just check it off.
+create table if not exists sprint_items (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  text text not null,
+  done boolean not null default false,
+  created_at timestamptz default now()
+);
+alter table sprint_items enable row level security;
+create policy "Users can manage own sprint items"
+  on sprint_items for all using (auth.uid() = user_id);
+
 -- Migration for existing databases (safe to re-run):
 -- alter table profile add column if not exists drive_ready_folder_id text default '';
 --
@@ -118,3 +131,13 @@ create policy "Users can manage own ideas"
 -- delete from channels a using channels b
 --   where a.user_id = b.user_id and a.label = b.label and a.created_at > b.created_at;
 -- alter table channels add constraint channels_user_label_unique unique (user_id, label);
+--
+-- create table if not exists sprint_items (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users on delete cascade not null,
+--   text text not null,
+--   done boolean not null default false,
+--   created_at timestamptz default now()
+-- );
+-- alter table sprint_items enable row level security;
+-- create policy "Users can manage own sprint items" on sprint_items for all using (auth.uid() = user_id);
