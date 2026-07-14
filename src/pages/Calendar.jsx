@@ -98,7 +98,7 @@ export default function Calendar() {
       </div>
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, overflowX: 'auto' }}>
+        <div style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '160px repeat(7, minmax(140px, 1fr))', gap: 8, minWidth: 940 }}>
             <div />
             {weekDates.map((d, i) => {
@@ -128,7 +128,7 @@ export default function Calendar() {
                   const dateStr = toDateStr(d)
                   const items = piecesFor(channel.id, dateStr)
                   return (
-                    <div key={i} className="cw-card-flat" style={{ padding: 8, minHeight: 100, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div key={i} className="cw-card-flat" style={{ padding: 8, minHeight: 76, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {items.map(piece => {
                         const q = quadrantMeta(piece.quadrant)
                         return (

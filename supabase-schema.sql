@@ -55,7 +55,8 @@ create table if not exists channels (
   user_id uuid references auth.users on delete cascade not null,
   label text not null,
   order_index integer not null default 0,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (user_id, label)
 );
 alter table channels enable row level security;
 create policy "Users can manage own channels"
@@ -112,3 +113,8 @@ create policy "Users can manage own ideas"
 --
 -- alter table content_pieces add column if not exists channel_id uuid references channels(id) on delete set null;
 -- alter table content_pieces alter column platform drop not null;
+--
+-- -- Dedupe channels created by the seeding race condition, then lock it down:
+-- delete from channels a using channels b
+--   where a.user_id = b.user_id and a.label = b.label and a.created_at > b.created_at;
+-- alter table channels add constraint channels_user_label_unique unique (user_id, label);

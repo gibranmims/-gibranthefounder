@@ -71,9 +71,13 @@ export function AppProvider({ children, userId, user }) {
   async function loadChannels() {
     const { data } = await supabase.from('channels').select('*').eq('user_id', userId).order('order_index', { ascending: true })
     if (!data || data.length === 0) {
+      // upsert + ignoreDuplicates guards against two concurrent loads (e.g. a fast reload)
+      // both seeing zero channels and both trying to seed — the unique(user_id, label)
+      // constraint means only one set actually lands, so we re-select rather than trust the insert result.
       const rows = DEFAULT_CHANNELS.map((label, i) => ({ user_id: userId, label, order_index: i }))
-      const { data: seeded } = await supabase.from('channels').insert(rows).select()
-      setChannels((seeded || []).sort((a, b) => a.order_index - b.order_index))
+      await supabase.from('channels').upsert(rows, { onConflict: 'user_id,label', ignoreDuplicates: true })
+      const { data: seeded } = await supabase.from('channels').select('*').eq('user_id', userId).order('order_index', { ascending: true })
+      setChannels(seeded || [])
       return
     }
     setChannels(data)
