@@ -5,6 +5,7 @@ export const QUADRANTS = [
   {
     key: 'creator_psychology',
     label: 'Creator Psychology',
+    question: 'How should I think?',
     color: 'var(--district-brand)',
     dim: 'var(--district-brand-dim)',
     desc: 'How creators think — beliefs, mindset, decision-making, identity shifts.',
@@ -12,6 +13,7 @@ export const QUADRANTS = [
   {
     key: 'creator_business',
     label: 'Creator Business',
+    question: 'What should I build?',
     color: 'var(--ok)',
     dim: 'var(--ok-dim)',
     desc: 'How creator businesses operate — brand deals, pricing, offers, systems, revenue.',
@@ -19,6 +21,7 @@ export const QUADRANTS = [
   {
     key: 'content_that_converts',
     label: 'Content That Converts',
+    question: 'How do I sell?',
     color: 'var(--district-content)',
     dim: 'var(--district-content-dim)',
     desc: 'How content creates customers — hooks, storytelling, positioning, conversion (not virality).',
@@ -26,6 +29,7 @@ export const QUADRANTS = [
   {
     key: 'creator_os',
     label: 'Creator Operating System',
+    question: 'How do I execute?',
     color: 'var(--district-pipeline)',
     dim: 'var(--district-pipeline-dim)',
     desc: 'How to build infrastructure — AI workflows, SOPs, automation, business architecture.',

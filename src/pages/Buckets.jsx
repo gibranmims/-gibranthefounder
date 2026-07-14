@@ -33,24 +33,36 @@ export default function Buckets() {
         <button className="cw-btn-primary" onClick={() => setNewOpen(true)}>+ New Piece</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 22 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
         <button
           className="cw-chip"
           onClick={() => setQuadrantFilter('all')}
           style={quadrantFilter === 'all' ? { background: 'var(--accent)', color: 'var(--accent-ink)', border: 'none' } : undefined}
         >
-          All
+          All Quadrants
         </button>
-        {QUADRANTS.map(q => (
-          <button
-            key={q.key}
-            className="cw-chip"
-            onClick={() => setQuadrantFilter(q.key)}
-            style={quadrantFilter === q.key ? { background: q.color, color: 'var(--accent-ink)', border: 'none' } : undefined}
-          >
-            {q.label}
-          </button>
-        ))}
+      </div>
+
+      <div className="cw-grid-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', marginBottom: 22 }}>
+        {QUADRANTS.map(q => {
+          const active = quadrantFilter === q.key
+          return (
+            <button
+              key={q.key}
+              onClick={() => setQuadrantFilter(active ? 'all' : q.key)}
+              className="cw-card cw-hover"
+              style={{
+                width: '100%', padding: '14px 16px', textAlign: 'left', cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                fontFamily: 'inherit', appearance: 'none',
+                border: active ? `1.5px solid ${q.color}` : '1px solid var(--stroke-1)',
+              }}
+            >
+              <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: q.color }} />
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface-1)', paddingLeft: 6 }}>{q.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: q.color, marginTop: 4, paddingLeft: 6 }}>{q.question}</div>
+            </button>
+          )
+        })}
       </div>
 
       <div className="cw-grid-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
