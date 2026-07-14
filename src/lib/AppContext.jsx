@@ -26,6 +26,7 @@ export function AppProvider({ children, userId, user }) {
   const [icpNotes, setIcpNotes] = useState('')
   const [pillarsNotes, setPillarsNotes] = useState('')
   const [gcalEmbedUrl, setGcalEmbedUrl] = useState('')
+  const [driveFolderId, setDriveFolderId] = useState('')
   const [streakCount, setStreakCount] = useState(0)
   const [lastActivityDate, setLastActivityDate] = useState(null)
   const [contentPieces, setContentPieces] = useState([])
@@ -48,6 +49,7 @@ export function AppProvider({ children, userId, user }) {
       setIcpNotes(data.icp_notes || '')
       setPillarsNotes(data.pillars_notes || '')
       setGcalEmbedUrl(data.gcal_embed_url || '')
+      setDriveFolderId(data.drive_ready_folder_id || '')
       setStreakCount(data.streak_count || 0)
       setLastActivityDate(data.last_activity_date || null)
     }
@@ -71,6 +73,7 @@ export function AppProvider({ children, userId, user }) {
     if ('icp_notes' in updates) setIcpNotes(updates.icp_notes)
     if ('pillars_notes' in updates) setPillarsNotes(updates.pillars_notes)
     if ('gcal_embed_url' in updates) setGcalEmbedUrl(updates.gcal_embed_url)
+    if ('drive_ready_folder_id' in updates) setDriveFolderId(updates.drive_ready_folder_id)
   }
 
   // Bump the daily streak — called on any create/progress action. Increments once per day.
@@ -140,7 +143,7 @@ export function AppProvider({ children, userId, user }) {
     <AppContext.Provider value={{
       userId,
       displayName,
-      positioningStatement, icpNotes, pillarsNotes, gcalEmbedUrl,
+      positioningStatement, icpNotes, pillarsNotes, gcalEmbedUrl, driveFolderId,
       updateProfile,
       streakCount, lastActivityDate,
       contentPieces, addContentPiece, updateContentPiece, moveStage, deleteContentPiece,

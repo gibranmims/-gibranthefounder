@@ -1,81 +1,147 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useApp } from '../lib/AppContext'
-import { quadrantMeta, platformLabel } from '../lib/philosophy'
+import ContentPieceModal from '../components/ContentPieceModal'
+import ReadyToPostPanel from '../components/ReadyToPostPanel'
+import { PLATFORMS, quadrantMeta } from '../lib/philosophy'
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getMonday(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
 export default function Calendar() {
-  const { contentPieces, gcalEmbedUrl } = useApp()
+  const { contentPieces } = useApp()
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [modalState, setModalState] = useState(null) // { piece } | { initial } | null
 
-  const scheduled = useMemo(() => {
-    const withDates = contentPieces.filter(c => c.scheduled_date && c.stage !== 'posted')
-    const byDate = {}
-    withDates.forEach(c => {
-      byDate[c.scheduled_date] = byDate[c.scheduled_date] || []
-      byDate[c.scheduled_date].push(c)
+  const weekDates = useMemo(() => {
+    const monday = getMonday(new Date())
+    monday.setDate(monday.getDate() + weekOffset * 7)
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      return d
     })
-    return Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b))
-  }, [contentPieces])
+  }, [weekOffset])
 
-  const isEmbed = gcalEmbedUrl && /calendar\.google\.com\/calendar\/embed/.test(gcalEmbedUrl)
+  const weekLabel = useMemo(() => {
+    const start = weekDates[0], end = weekDates[6]
+    const sameMonth = start.getMonth() === end.getMonth()
+    return sameMonth
+      ? `${MONTHS[start.getMonth()]} ${start.getDate()} – ${end.getDate()}, ${end.getFullYear()}`
+      : `${MONTHS[start.getMonth()]} ${start.getDate()} – ${MONTHS[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`
+  }, [weekDates])
+
+  function piecesFor(platformKey, dateStr) {
+    return contentPieces.filter(c => c.platform === platformKey && c.scheduled_date === dateStr)
+  }
+
+  const todayStr = toDateStr(new Date())
 
   return (
     <div>
       <div className="cw-banner cw-banner--sprint" style={{ padding: '26px 30px', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <div className="cw-eyebrow">Calendar</div>
-          <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>What's Scheduled</h1>
-          <div className="cw-sub" style={{ marginTop: 2 }}>Your real calendar stays authoritative.</div>
+          <div className="cw-eyebrow">Content Calendar</div>
+          <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>Calendar</h1>
+          <div className="cw-sub" style={{ marginTop: 2 }}>Plan and track every post, by platform, by day.</div>
         </div>
-        {gcalEmbedUrl && !isEmbed && (
-          <a href={gcalEmbedUrl} target="_blank" rel="noreferrer" className="cw-btn-ghost">Open Google Calendar</a>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w - 1)}>←</button>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: 'var(--on-canvas-1)', whiteSpace: 'nowrap' }}>{weekLabel}</div>
+          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w + 1)}>→</button>
+          {weekOffset !== 0 && (
+            <button className="cw-btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setWeekOffset(0)}>Today</button>
+          )}
+        </div>
       </div>
 
-      {scheduled.length === 0 ? (
-        <div className="cw-card cw-empty" style={{ marginBottom: 20 }}>
-          <div className="cw-empty-title">Nothing scheduled yet</div>
-          <div className="cw-empty-sub">Set a scheduled date on a piece in Buckets and it'll show up here.</div>
-        </div>
-      ) : (
-        <div style={{ maxWidth: 640, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {scheduled.map(([date, items]) => (
-            <div key={date} className="cw-card" style={{ padding: 20 }}>
-              <div className="cw-label">{formatDate(date)}</div>
-              {items.map(piece => {
-                const q = quadrantMeta(piece.quadrant)
-                return (
-                  <div key={piece.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 0', borderTop: '1px solid var(--stroke-1)' }}>
-                    <span className="cw-badge" style={{ background: q.dim, color: q.color, flexShrink: 0 }}>{q.label}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--on-surface-1)' }}>{piece.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--on-surface-3)', marginTop: 2 }}>{platformLabel(piece.platform)}</div>
-                    </div>
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, overflowX: 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '140px repeat(7, minmax(140px, 1fr))', gap: 8, minWidth: 900 }}>
+            <div />
+            {weekDates.map((d, i) => {
+              const isToday = toDateStr(d) === todayStr
+              return (
+                <div key={i} style={{ textAlign: 'center', paddingBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--on-canvas-3)' }}>{DAY_LABELS[i]}</div>
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, marginTop: 2,
+                    color: isToday ? 'var(--accent-ink)' : 'var(--on-canvas-1)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 30, height: 30, borderRadius: '50%',
+                    background: isToday ? 'var(--accent)' : 'transparent',
+                  }}>
+                    {d.getDate()}
                   </div>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+                </div>
+              )
+            })}
 
-      {isEmbed && (
-        <div className="cw-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <iframe
-            title="Google Calendar"
-            src={gcalEmbedUrl}
-            style={{ width: '100%', height: 600, border: 'none', display: 'block' }}
-          />
+            {PLATFORMS.map(platform => (
+              <React.Fragment key={platform.key}>
+                <div style={{ display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 700, color: 'var(--on-canvas-2)' }}>
+                  {platform.label}
+                </div>
+                {weekDates.map((d, i) => {
+                  const dateStr = toDateStr(d)
+                  const items = piecesFor(platform.key, dateStr)
+                  return (
+                    <div key={i} className="cw-card-flat" style={{ padding: 8, minHeight: 100, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {items.map(piece => {
+                        const q = quadrantMeta(piece.quadrant)
+                        return (
+                          <div
+                            key={piece.id}
+                            onClick={() => setModalState({ piece })}
+                            className="cw-hover"
+                            style={{
+                              cursor: 'pointer', borderRadius: 8, padding: '6px 8px', position: 'relative', overflow: 'hidden',
+                              background: 'var(--surface-1)', border: '1px solid var(--stroke-1)',
+                            }}
+                          >
+                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: q.color }} />
+                            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--on-surface-1)', paddingLeft: 6, lineHeight: 1.3 }}>
+                              {piece.title}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      <button
+                        className="cw-btn-ghost"
+                        style={{ fontSize: 11, padding: '5px 8px', marginTop: 'auto' }}
+                        onClick={() => setModalState({ initial: { platform: platform.key, scheduled_date: dateStr, stage: 'scheduled' } })}
+                      >
+                        + Add
+                      </button>
+                    </div>
+                  )
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-      )}
 
-      {!gcalEmbedUrl && (
-        <div style={{ fontSize: 13, color: 'var(--on-canvas-3)' }}>
-          Add a Google Calendar link or embed URL in Settings to see it here.
-        </div>
+        <ReadyToPostPanel onUseFile={file => setModalState({ initial: { ...file, stage: 'scheduled' } })} />
+      </div>
+
+      {modalState && (
+        <ContentPieceModal
+          piece={modalState.piece}
+          initial={modalState.initial}
+          onClose={() => setModalState(null)}
+        />
       )}
     </div>
   )

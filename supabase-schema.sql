@@ -9,6 +9,7 @@ create table if not exists profile (
   icp_notes text default '',
   pillars_notes text default '',
   gcal_embed_url text default '',
+  drive_ready_folder_id text default '',
   dark_mode boolean default false,
   streak_count integer default 0,
   last_activity_date date,
@@ -87,3 +88,6 @@ create table if not exists ideas (
 alter table ideas enable row level security;
 create policy "Users can manage own ideas"
   on ideas for all using (auth.uid() = user_id);
+
+-- Migration for existing databases (safe to re-run):
+-- alter table profile add column if not exists drive_ready_folder_id text default '';
