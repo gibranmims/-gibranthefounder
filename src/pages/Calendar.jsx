@@ -5,39 +5,34 @@ import ContentPieceModal from '../components/ContentPieceModal'
 import ReadyToPostPanel from '../components/ReadyToPostPanel'
 import { quadrantMeta } from '../lib/philosophy'
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const WINDOW_SIZE = 5
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function getMonday(date) {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
 export default function Calendar() {
   const { contentPieces, channels } = useApp()
-  const [weekOffset, setWeekOffset] = useState(0)
+  const [dayOffset, setDayOffset] = useState(0) // shifts the 5-day window by WINDOW_SIZE each nav click
   const [modalState, setModalState] = useState(null) // { piece } | { initial } | null
 
+  // Rolling window: always WINDOW_SIZE consecutive days starting from today + dayOffset —
+  // not aligned to Monday, so opening the app mid-week starts the view right there.
   const weekDates = useMemo(() => {
-    const monday = getMonday(new Date())
-    monday.setDate(monday.getDate() + weekOffset * 7)
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(monday)
-      d.setDate(monday.getDate() + i)
+    const anchor = new Date()
+    anchor.setHours(0, 0, 0, 0)
+    anchor.setDate(anchor.getDate() + dayOffset)
+    return Array.from({ length: WINDOW_SIZE }, (_, i) => {
+      const d = new Date(anchor)
+      d.setDate(anchor.getDate() + i)
       return d
     })
-  }, [weekOffset])
+  }, [dayOffset])
 
   const weekLabel = useMemo(() => {
-    const start = weekDates[0], end = weekDates[6]
+    const start = weekDates[0], end = weekDates[WINDOW_SIZE - 1]
     const sameMonth = start.getMonth() === end.getMonth()
     return sameMonth
       ? `${MONTHS[start.getMonth()]} ${start.getDate()} – ${end.getDate()}, ${end.getFullYear()}`
@@ -61,17 +56,17 @@ export default function Calendar() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
         <h1 className="cw-title" style={{ fontSize: 26 }}>Calendar</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w - 1)}>←</button>
+          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setDayOffset(o => o - WINDOW_SIZE)}>←</button>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: 'var(--on-canvas-1)', whiteSpace: 'nowrap' }}>{weekLabel}</div>
-          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setWeekOffset(w => w + 1)}>→</button>
-          {weekOffset !== 0 && (
-            <button className="cw-btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setWeekOffset(0)}>Today</button>
+          <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setDayOffset(o => o + WINDOW_SIZE)}>→</button>
+          {dayOffset !== 0 && (
+            <button className="cw-btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setDayOffset(0)}>Today</button>
           )}
         </div>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '160px repeat(7, minmax(140px, 1fr))', gap: 8, minWidth: 940 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `160px repeat(${WINDOW_SIZE}, minmax(160px, 1fr))`, gap: 8, minWidth: 860 }}>
           <div />
           {weekDates.map((d, i) => {
             const dateStr = toDateStr(d)
@@ -80,7 +75,7 @@ export default function Calendar() {
             const posted = postedDates.has(dateStr)
             return (
               <div key={i} style={{ textAlign: 'center', paddingBottom: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--on-canvas-3)' }}>{DAY_LABELS[i]}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--on-canvas-3)' }}>{DAY_LABELS[d.getDay()]}</div>
                 <div style={{
                   fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, marginTop: 2,
                   color: isToday ? 'var(--accent-ink)' : 'var(--on-canvas-1)',

@@ -51,9 +51,9 @@ export default function ReadyToPostPanel({ onUseFile }) {
       )}
 
       {configured && !loading && !error && files.length > 0 && (
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {files.map(file => (
-            <div key={file.id} className="cw-card-flat" style={{ padding: 10, width: 200, flexShrink: 0 }}>
+            <div key={file.id} className="cw-card-flat" style={{ padding: 10, width: 200, flexShrink: 0, flexGrow: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--on-surface-1)', marginBottom: 8, wordBreak: 'break-word' }}>
                 {file.name}
               </div>
