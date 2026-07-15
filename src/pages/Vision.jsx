@@ -57,12 +57,25 @@ export default function Vision() {
 
         <div className="cw-card" style={{ padding: 24 }}>
           <div className="cw-label">The Four Content Pillars</div>
-          <div className="cw-grid-2">
+          <div style={{ fontSize: 13, color: 'var(--on-surface-3)', marginBottom: 16, lineHeight: 1.6 }}>
+            Think → Build → Sell → Execute. A complete operating model — develop the right beliefs, create
+            valuable assets and a business, learn how to influence and convert, then build systems that make
+            it repeatable.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {QUADRANTS.map(q => (
-              <div key={q.key} className="cw-card-flat" style={{ padding: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: q.color, marginBottom: 2 }}>{q.label}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--on-surface-2)', marginBottom: 6 }}>{q.question}</div>
-                <div style={{ fontSize: 13, color: 'var(--on-surface-3)', lineHeight: 1.5 }}>{q.desc}</div>
+              <div key={q.key} className="cw-card-flat" style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: q.color }} />
+                <div style={{ paddingLeft: 8 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: q.color, marginBottom: 2 }}>{q.emoji} {q.label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--on-surface-2)', marginBottom: 8 }}>{q.question}</div>
+                  <div style={{ fontSize: 13, color: 'var(--on-surface-3)', lineHeight: 1.6, marginBottom: 10 }}>{q.desc}</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {q.examples.map(ex => (
+                      <span key={ex} className="cw-chip" style={{ fontSize: 11, padding: '3px 9px' }}>{ex}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

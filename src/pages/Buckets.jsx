@@ -54,7 +54,7 @@ export default function Buckets() {
                   >
                     <div style={{ position: 'relative', paddingLeft: 10, marginBottom: 12 }}>
                       <div style={{ position: 'absolute', top: 2, left: 0, bottom: 2, width: 3, borderRadius: 2, background: q.color }} />
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface-1)' }}>{q.label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface-1)' }}>{q.emoji} {q.label}</div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: q.color, marginTop: 2 }}>{q.question}</div>
                     </div>
 
