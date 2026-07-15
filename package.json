@@ -10,6 +10,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^16.6.0",
     "@supabase/supabase-js": "^2.45.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
