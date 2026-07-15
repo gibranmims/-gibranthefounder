@@ -43,11 +43,6 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
-do $$ begin
-  create type content_stage as enum ('idea', 'drafting', 'scheduled', 'posted');
-exception when duplicate_object then null;
-end $$;
-
 -- channels: user-editable rows for the Calendar grid (e.g. TikTok, Instagram Reels).
 -- Replaces the old fixed `platform` enum so the user can add/rename/reorder freely.
 create table if not exists channels (
@@ -68,7 +63,7 @@ create table if not exists content_pieces (
   title text not null,
   quadrant content_quadrant not null,
   channel_id uuid references channels(id) on delete set null,
-  stage content_stage not null default 'idea',
+  stage text not null default 'scripted',
   scheduled_date date,
   posted_date date,
   notes text default '',
@@ -141,3 +136,15 @@ create policy "Users can manage own sprint items"
 -- );
 -- alter table sprint_items enable row level security;
 -- create policy "Users can manage own sprint items" on sprint_items for all using (auth.uid() = user_id);
+--
+-- -- Stage moved from a fixed enum to plain text (new stages: scripted, filmed, edited,
+-- -- ready_to_post, posted) so it can evolve without an ALTER TYPE migration each time:
+-- alter table content_pieces alter column stage type text using stage::text;
+-- alter table content_pieces alter column stage set default 'scripted';
+-- update content_pieces set stage = case stage
+--   when 'idea' then 'scripted'
+--   when 'drafting' then 'filmed'
+--   when 'scheduled' then 'ready_to_post'
+--   else stage
+-- end;
+-- alter table content_pieces alter column channel_id drop not null; -- already nullable, no-op if so

@@ -130,7 +130,7 @@ export default function Calendar() {
                     <button
                       className="cw-btn-ghost"
                       style={{ fontSize: 11, padding: '5px 8px', marginTop: 'auto' }}
-                      onClick={() => setModalState({ initial: { channel_id: channel.id, scheduled_date: dateStr, stage: 'scheduled' } })}
+                      onClick={() => setModalState({ initial: { channel_id: channel.id, scheduled_date: dateStr, stage: 'ready_to_post' } })}
                     >
                       + Add
                     </button>
@@ -143,7 +143,7 @@ export default function Calendar() {
       </div>
 
       <div style={{ marginTop: 24 }}>
-        <ReadyToPostPanel onUseFile={file => setModalState({ initial: { ...file, stage: 'scheduled' } })} />
+        <ReadyToPostPanel onUseFile={file => setModalState({ initial: { ...file, stage: 'ready_to_post' } })} />
       </div>
 
       {modalState && (

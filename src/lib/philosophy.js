@@ -41,9 +41,10 @@ export function quadrantMeta(key) {
 }
 
 export const STAGES = [
-  { key: 'idea', label: 'Idea' },
-  { key: 'drafting', label: 'Drafting' },
-  { key: 'scheduled', label: 'Scheduled' },
+  { key: 'scripted', label: 'Scripted' },
+  { key: 'filmed', label: 'Filmed' },
+  { key: 'edited', label: 'Edited' },
+  { key: 'ready_to_post', label: 'Ready to Post' },
   { key: 'posted', label: 'Posted' },
 ]
 

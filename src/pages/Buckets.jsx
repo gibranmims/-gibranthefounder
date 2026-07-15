@@ -65,7 +65,7 @@ export default function Buckets() {
         })}
       </div>
 
-      <div className="cw-grid-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+      <div className="cw-grid-3" style={{ gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))` }}>
         {STAGES.map(stage => {
           const items = filtered.filter(c => c.stage === stage.key)
           const { prev, next } = stageNeighbors(stage.key)
