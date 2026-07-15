@@ -57,3 +57,14 @@ export const EVAL_CRITERIA = [
   { key: 'conversion_potential', label: 'Conversion Potential' },
   { key: 'discussion_potential', label: 'Discussion Potential' },
 ]
+
+// Scripts are delivered one beat per line. Collapse whatever spacing was typed/pasted
+// and re-insert exactly one blank line between beats — teleprompter-style.
+export function formatScriptBeats(raw) {
+  if (!raw) return ''
+  return raw
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n\n')
+}

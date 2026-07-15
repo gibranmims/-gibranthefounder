@@ -16,8 +16,8 @@ export default function Sprint() {
   return (
     <div>
       <div className="cw-banner cw-banner--sprint" style={{ padding: '26px 30px', marginBottom: 24 }}>
-        <div className="cw-eyebrow">Content Sprint</div>
-        <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>Today's Lineup</h1>
+        <div className="cw-eyebrow">Recording Lineup</div>
+        <h1 className="cw-title" style={{ fontSize: 30, marginTop: 4 }}>Recording Lineup</h1>
         <div className="cw-sub" style={{ marginTop: 2 }}>The shit you're about to record. Add it, knock it out, check it off.</div>
       </div>
 
@@ -40,7 +40,7 @@ export default function Sprint() {
         {sprintItems.length === 0 ? (
           <div className="cw-card cw-empty">
             <div className="cw-empty-title">Nothing lined up yet</div>
-            <div className="cw-empty-sub">Add everything you're planning to record in this sprint — no scoring, no quadrants, just the lineup.</div>
+            <div className="cw-empty-sub">Add everything you're planning to record next — no scoring, no pillars, just the lineup.</div>
           </div>
         ) : (
           <>

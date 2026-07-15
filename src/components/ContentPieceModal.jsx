@@ -1,38 +1,40 @@
 import React, { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Modal from './Modal'
-import { QUADRANTS, STAGES, EVAL_CRITERIA } from '../lib/philosophy'
+import { QUADRANTS, STAGES, EVAL_CRITERIA, formatScriptBeats } from '../lib/philosophy'
 
 // Shared add/edit modal for a content piece. Pass `piece` to edit, or `initial`
-// (partial field values, e.g. { channel_id, scheduled_date }) to prefill a new one.
+// (partial field values, e.g. { channel_id, scheduled_date, doc_link }) to prefill a new one.
+// scheduled_date / doc_link ride along invisibly when set via `initial` (e.g. from the
+// Calendar's "+ Add" or the Ready to Post panel) — no date/link field is shown here.
 export default function ContentPieceModal({ piece, initial, onClose }) {
   const isEdit = !!piece
   const { channels, addContentPiece, updateContentPiece, deleteContentPiece } = useApp()
 
   const [title, setTitle] = useState(piece?.title || initial?.title || '')
+  const [script, setScript] = useState(formatScriptBeats(piece?.script || ''))
   const [quadrant, setQuadrant] = useState(piece?.quadrant || initial?.quadrant || QUADRANTS[0].key)
   const [channelId, setChannelId] = useState(piece?.channel_id || initial?.channel_id || channels[0]?.id || '')
   const [stage, setStage] = useState(piece?.stage || initial?.stage || 'idea')
-  const [scheduledDate, setScheduledDate] = useState(piece?.scheduled_date || initial?.scheduled_date || '')
-  const [script, setScript] = useState(piece?.script || '')
-  const [notes, setNotes] = useState(piece?.notes || '')
-  const [docLink, setDocLink] = useState(piece?.doc_link || initial?.doc_link || '')
   const [showScores, setShowScores] = useState(piece && EVAL_CRITERIA.some(c => piece[`score_${c.key}`]))
   const [scores, setScores] = useState(
     Object.fromEntries(EVAL_CRITERIA.map(c => [c.key, piece?.[`score_${c.key}`] || 0]))
   )
+
+  // Carried through untouched — set by Calendar/Ready-to-Post, not editable here.
+  const scheduledDate = piece?.scheduled_date ?? initial?.scheduled_date ?? null
+  const docLink = piece?.doc_link ?? initial?.doc_link ?? ''
 
   async function handleSave() {
     if (!title.trim()) return
     const scoreUpdates = Object.fromEntries(EVAL_CRITERIA.map(c => [`score_${c.key}`, scores[c.key] || null]))
     const payload = {
       title: title.trim(),
+      script: formatScriptBeats(script),
       quadrant,
       channel_id: channelId || null,
       stage,
-      scheduled_date: scheduledDate || null,
-      script,
-      notes,
+      scheduled_date: scheduledDate,
       doc_link: docLink,
       ...scoreUpdates,
     }
@@ -52,6 +54,18 @@ export default function ContentPieceModal({ piece, initial, onClose }) {
       <div style={{ marginBottom: 14 }}>
         <label className="cw-label">Title / Hook</label>
         <input className="cw-input" type="text" value={title} onChange={e => setTitle(e.target.value)} autoFocus placeholder="What's the piece about?" />
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <label className="cw-label">Script (optional — leave blank to just save the idea)</label>
+        <textarea
+          className="cw-textarea"
+          value={script}
+          onChange={e => setScript(e.target.value)}
+          onBlur={() => setScript(formatScriptBeats(script))}
+          placeholder="One beat per line — we'll space it out for delivery."
+          style={{ minHeight: 160 }}
+        />
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -84,26 +98,6 @@ export default function ContentPieceModal({ piece, initial, onClose }) {
             </button>
           ))}
         </div>
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label className="cw-label">Scheduled Date</label>
-        <input className="cw-input" type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label className="cw-label">Script</label>
-        <textarea className="cw-textarea" value={script} onChange={e => setScript(e.target.value)} placeholder="Type or paste the full script here..." />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label className="cw-label">Notes</label>
-        <textarea className="cw-textarea" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Angle, talking points, references..." />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label className="cw-label">Doc / Drive Link</label>
-        <input className="cw-input" type="text" value={docLink} onChange={e => setDocLink(e.target.value)} placeholder="Paste a Google Doc or Drive link" />
       </div>
 
       {!showScores ? (
