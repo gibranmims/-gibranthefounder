@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../lib/AppContext'
 import ContentPieceModal from '../components/ContentPieceModal'
-import { QUADRANTS, STAGES } from '../lib/philosophy'
+import { QUADRANTS, STAGES, stageMeta } from '../lib/philosophy'
 
 export default function Buckets() {
   const { contentPieces, channels, updateContentPiece } = useApp()
@@ -11,9 +11,6 @@ export default function Buckets() {
 
   function channelLabel(id) {
     return channels.find(c => c.id === id)?.label || null
-  }
-  function stageLabel(key) {
-    return STAGES.find(s => s.key === key)?.label || key
   }
 
   async function handleDragEnd(result) {
@@ -39,7 +36,9 @@ export default function Buckets() {
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="cw-grid-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', alignItems: 'start' }}>
           {QUADRANTS.map(q => {
-            const items = contentPieces.filter(c => c.quadrant === q.key)
+            const items = contentPieces
+              .filter(c => c.quadrant === q.key)
+              .sort((a, b) => STAGES.findIndex(s => s.key === a.stage) - STAGES.findIndex(s => s.key === b.stage))
             return (
               <Droppable droppableId={q.key} key={q.key}>
                 {(provided, snapshot) => (
@@ -60,6 +59,7 @@ export default function Buckets() {
 
                     {items.map((piece, index) => {
                       const chLabel = channelLabel(piece.channel_id)
+                      const sm = stageMeta(piece.stage)
                       return (
                         <Draggable draggableId={piece.id} index={index} key={piece.id}>
                           {(dragProvided, dragSnapshot) => (
@@ -79,7 +79,7 @@ export default function Buckets() {
                                 {piece.title}
                               </div>
                               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                <span className="cw-badge cw-badge-neutral">{stageLabel(piece.stage)}</span>
+                                <span className="cw-badge" style={{ background: sm.dim, color: sm.color }}>{sm.label}</span>
                                 {chLabel && <span className="cw-badge cw-badge-info">{chLabel}</span>}
                               </div>
                             </div>

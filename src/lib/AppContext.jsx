@@ -130,8 +130,8 @@ export function AppProvider({ children, userId, user }) {
       user_id: userId,
       title: idea.text,
       quadrant: 'creator_psychology',
-      channel_id: channels[0]?.id || null,
-      stage: 'idea',
+      channel_id: null,
+      stage: 'scripted',
     }).select().single()
     if (!error && data) {
       setContentPieces(prev => [...prev, data])
@@ -198,13 +198,33 @@ export function AppProvider({ children, userId, user }) {
     const { data, error } = await supabase.from('sprint_items').insert({ text, user_id: userId }).select().single()
     if (!error && data) setSprintItems(prev => [...prev, data])
   }
+  // Queue an already-scripted Buckets piece onto the lineup without retyping it.
+  async function addSprintItemFromPiece(piece) {
+    const { data, error } = await supabase.from('sprint_items').insert({
+      text: piece.title, user_id: userId, content_piece_id: piece.id,
+    }).select().single()
+    if (!error && data) setSprintItems(prev => [...prev, data])
+  }
+  async function updateSprintItem(id, updates) {
+    await supabase.from('sprint_items').update(updates).eq('id', id)
+    setSprintItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+  }
   async function toggleSprintItem(id) {
     const item = sprintItems.find(i => i.id === id)
     if (!item) return
     const done = !item.done
     await supabase.from('sprint_items').update({ done }).eq('id', id)
     setSprintItems(prev => prev.map(i => i.id === id ? { ...i, done } : i))
-    if (done) bumpStreak()
+    if (done) {
+      bumpStreak()
+      // Checking off a lineup item linked to a Buckets piece means it just got recorded.
+      if (item.content_piece_id) {
+        const piece = contentPieces.find(p => p.id === item.content_piece_id)
+        if (piece && piece.stage === 'scripted') {
+          await updateContentPiece(piece.id, { stage: 'filmed' })
+        }
+      }
+    }
   }
   async function deleteSprintItem(id) {
     await supabase.from('sprint_items').delete().eq('id', id)
@@ -227,7 +247,7 @@ export function AppProvider({ children, userId, user }) {
       contentPieces, addContentPiece, updateContentPiece, moveStage, deleteContentPiece,
       ideas, addIdea, deleteIdea, promoteIdea,
       channels, addChannel, updateChannel, deleteChannel, moveChannel,
-      sprintItems, addSprintItem, toggleSprintItem, deleteSprintItem, clearDoneSprintItems,
+      sprintItems, addSprintItem, addSprintItemFromPiece, updateSprintItem, toggleSprintItem, deleteSprintItem, clearDoneSprintItems,
       loading,
     }}>
       {children}

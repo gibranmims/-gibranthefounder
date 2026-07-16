@@ -100,6 +100,8 @@ create table if not exists sprint_items (
   user_id uuid references auth.users on delete cascade not null,
   text text not null,
   done boolean not null default false,
+  content_piece_id uuid references content_pieces(id) on delete set null,
+  filming_style text,
   created_at timestamptz default now()
 );
 alter table sprint_items enable row level security;
@@ -148,3 +150,6 @@ create policy "Users can manage own sprint items"
 --   else stage
 -- end;
 -- alter table content_pieces alter column channel_id drop not null; -- already nullable, no-op if so
+--
+-- alter table sprint_items add column if not exists content_piece_id uuid references content_pieces(id) on delete set null;
+-- alter table sprint_items add column if not exists filming_style text;

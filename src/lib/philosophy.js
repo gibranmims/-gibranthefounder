@@ -49,11 +49,20 @@ export function quadrantMeta(key) {
 }
 
 export const STAGES = [
-  { key: 'scripted', label: 'Scripted' },
-  { key: 'filmed', label: 'Filmed' },
-  { key: 'edited', label: 'Edited' },
-  { key: 'ready_to_post', label: 'Ready to Post' },
-  { key: 'posted', label: 'Posted' },
+  { key: 'scripted', label: 'Scripted', color: 'var(--on-surface-3)', dim: 'var(--neutral-dim)' },
+  { key: 'filmed', label: 'Filmed', color: 'var(--info)', dim: 'var(--info-dim)' },
+  { key: 'edited', label: 'Edited', color: 'var(--warn)', dim: 'var(--warn-dim)' },
+  { key: 'ready_to_post', label: 'Ready to Post', color: 'var(--district-content)', dim: 'var(--district-content-dim)' },
+  { key: 'posted', label: 'Posted', color: 'var(--ok)', dim: 'var(--ok-dim)' },
+]
+
+export function stageMeta(key) {
+  return STAGES.find(s => s.key === key) || STAGES[0]
+}
+
+export const FILMING_STYLES = [
+  { key: 'phone', label: 'Phone (Organic)' },
+  { key: 'studio', label: 'Studio Setup' },
 ]
 
 // Matches content_pieces.score_* columns (strip the score_ prefix to get the key)
