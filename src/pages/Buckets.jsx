@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../lib/AppContext'
 import ContentPieceModal from '../components/ContentPieceModal'
-import { QUADRANTS, STAGES, stageMeta } from '../lib/philosophy'
+import { QUADRANTS, STAGES, stageMeta, quadrantMeta } from '../lib/philosophy'
 
 export default function Buckets() {
   const { contentPieces, channels, updateContentPiece } = useApp()
@@ -22,6 +22,9 @@ export default function Buckets() {
     await updateContentPiece(piece.id, { quadrant: newQuadrant })
   }
 
+  // Recorded but not yet cut — cross-pillar, lives outside the four buckets.
+  const editsNeeded = contentPieces.filter(p => p.stage === 'filmed')
+
   return (
     <div>
       <div className="cw-banner cw-banner--content" style={{ padding: '26px 30px', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
@@ -33,8 +36,9 @@ export default function Buckets() {
         <button className="cw-btn-primary" onClick={() => setNewInitial({})}>+ New Piece</button>
       </div>
 
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="cw-grid-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', alignItems: 'start' }}>
+        <div className="cw-grid-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', alignItems: 'start', flex: 1, minWidth: 0 }}>
           {QUADRANTS.map(q => {
             const items = contentPieces
               .filter(c => c.quadrant === q.key)
@@ -103,6 +107,35 @@ export default function Buckets() {
           })}
         </div>
       </DragDropContext>
+
+      <div className="cw-card" style={{ padding: 18, width: 260, flexShrink: 0 }}>
+        <div className="cw-label" style={{ marginBottom: 4 }}>Edits Needed</div>
+        <div style={{ fontSize: 12, color: 'var(--on-surface-3)', marginBottom: 14 }}>Filmed, not cut yet</div>
+        {editsNeeded.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--on-surface-3)' }}>Nothing waiting on edits.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {editsNeeded.map(piece => {
+              const q = quadrantMeta(piece.quadrant)
+              return (
+                <div
+                  key={piece.id}
+                  onClick={() => setEditing(piece)}
+                  className="cw-card-flat"
+                  style={{ padding: 10, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+                >
+                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: q.color }} />
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--on-surface-1)', paddingLeft: 6, lineHeight: 1.35 }}>
+                    {piece.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: q.color, paddingLeft: 6, marginTop: 4 }}>{q.emoji} {q.label}</div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+      </div>
 
       {newInitial && <ContentPieceModal initial={newInitial} onClose={() => setNewInitial(null)} />}
       {editing && <ContentPieceModal piece={editing} onClose={() => setEditing(null)} />}
