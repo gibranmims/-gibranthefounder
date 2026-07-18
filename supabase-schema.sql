@@ -108,6 +108,32 @@ alter table sprint_items enable row level security;
 create policy "Users can manage own sprint items"
   on sprint_items for all using (auth.uid() = user_id);
 
+-- leads: warm outreach tracker — one row per personal contact being warmed for a
+-- CoWorlds referral. raw_input keeps the original spoken line; the generated_* columns
+-- hold the Claude-written message drafts. Stage is plain text (not_contacted → asked →
+-- referred, plus not_now) so it can evolve without an ALTER TYPE.
+create table if not exists leads (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  name text not null,
+  platform text,
+  context text,
+  raw_input text,
+  stage text not null default 'not_contacted',
+  generated_opener text,
+  generated_followups jsonb,
+  generated_transition text,
+  generated_referral_ask text,
+  notes text,
+  referral_name text,
+  next_follow_up date,
+  date_last_contacted timestamptz,
+  created_at timestamptz default now()
+);
+alter table leads enable row level security;
+create policy "Users can manage own leads"
+  on leads for all using (auth.uid() = user_id);
+
 -- Migration for existing databases (safe to re-run):
 -- alter table profile add column if not exists drive_ready_folder_id text default '';
 --
@@ -153,3 +179,25 @@ create policy "Users can manage own sprint items"
 --
 -- alter table sprint_items add column if not exists content_piece_id uuid references content_pieces(id) on delete set null;
 -- alter table sprint_items add column if not exists filming_style text;
+--
+-- -- Warm Outreach tool: the leads table.
+-- create table if not exists leads (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users on delete cascade not null,
+--   name text not null,
+--   platform text,
+--   context text,
+--   raw_input text,
+--   stage text not null default 'not_contacted',
+--   generated_opener text,
+--   generated_followups jsonb,
+--   generated_transition text,
+--   generated_referral_ask text,
+--   notes text,
+--   referral_name text,
+--   next_follow_up date,
+--   date_last_contacted timestamptz,
+--   created_at timestamptz default now()
+-- );
+-- alter table leads enable row level security;
+-- create policy "Users can manage own leads" on leads for all using (auth.uid() = user_id);

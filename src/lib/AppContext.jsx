@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { structureLead, fallbackName } from './outreachAI'
+import { nextStage } from './outreach'
 
 const AppContext = createContext(null)
 
@@ -35,13 +37,14 @@ export function AppProvider({ children, userId, user }) {
   const [ideas, setIdeas] = useState([])
   const [channels, setChannels] = useState([])
   const [sprintItems, setSprintItems] = useState([])
+  const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (userId) loadAll() }, [userId])
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels(), loadSprintItems()])
+    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels(), loadSprintItems(), loadLeads()])
     setLoading(false)
   }
 
@@ -87,6 +90,11 @@ export function AppProvider({ children, userId, user }) {
   async function loadSprintItems() {
     const { data } = await supabase.from('sprint_items').select('*').eq('user_id', userId).order('created_at', { ascending: true })
     setSprintItems(data || [])
+  }
+
+  async function loadLeads() {
+    const { data } = await supabase.from('leads').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+    setLeads(data || [])
   }
 
   // ── PROFILE ──
@@ -237,6 +245,89 @@ export function AppProvider({ children, userId, user }) {
     setSprintItems(prev => prev.filter(i => !i.done))
   }
 
+  // ── LEADS (Warm Outreach) ──
+  // Capture one raw line → Claude structures it + writes the message drafts → insert.
+  // If the AI call fails, we still save the raw line (with a name guessed from it) so nothing
+  // is lost — the card surfaces a "re-generate" action. Returns { ok, error } for the UI.
+  async function addLead(rawInput) {
+    const raw = (rawInput || '').trim()
+    if (!raw) return { ok: false, error: 'Empty input' }
+
+    let record
+    let aiError = null
+    try {
+      record = await structureLead(raw)
+    } catch (e) {
+      aiError = e.message || 'Generation failed'
+      record = { name: fallbackName(raw) }
+    }
+
+    const { data, error } = await supabase.from('leads').insert({
+      user_id: userId,
+      name: record.name,
+      platform: record.platform || null,
+      context: record.context || null,
+      raw_input: raw,
+      stage: 'not_contacted',
+      generated_opener: record.generated_opener || null,
+      generated_followups: record.generated_followups || null,
+      generated_transition: record.generated_transition || null,
+      generated_referral_ask: record.generated_referral_ask || null,
+    }).select().single()
+
+    if (error) return { ok: false, error: error.message }
+    setLeads(prev => [data, ...prev])
+    bumpStreak()
+    return { ok: true, error: aiError }
+  }
+
+  // Re-run the AI on an already-saved lead (used when the first generation failed).
+  async function regenerateLead(id) {
+    const lead = leads.find(l => l.id === id)
+    if (!lead) return { ok: false, error: 'Lead not found' }
+    try {
+      const record = await structureLead(lead.raw_input || lead.name)
+      const updates = {
+        name: record.name || lead.name,
+        platform: record.platform || null,
+        context: record.context || null,
+        generated_opener: record.generated_opener || null,
+        generated_followups: record.generated_followups || null,
+        generated_transition: record.generated_transition || null,
+        generated_referral_ask: record.generated_referral_ask || null,
+      }
+      await supabase.from('leads').update(updates).eq('id', id)
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: e.message || 'Generation failed' }
+    }
+  }
+
+  async function advanceLeadStage(id) {
+    const lead = leads.find(l => l.id === id)
+    if (!lead) return
+    const stage = nextStage(lead.stage)
+    if (stage === lead.stage) return
+    await setLeadStage(id, stage)
+  }
+
+  async function setLeadStage(id, stage) {
+    await supabase.from('leads').update({ stage }).eq('id', id)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, stage } : l))
+    bumpStreak()
+  }
+
+  async function updateLead(id, updates) {
+    await supabase.from('leads').update(updates).eq('id', id)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
+  }
+
+  async function deleteLead(id) {
+    await supabase.from('leads').delete().eq('id', id)
+    setLeads(prev => prev.filter(l => l.id !== id))
+  }
+
   return (
     <AppContext.Provider value={{
       userId,
@@ -248,6 +339,7 @@ export function AppProvider({ children, userId, user }) {
       ideas, addIdea, deleteIdea, promoteIdea,
       channels, addChannel, updateChannel, deleteChannel, moveChannel,
       sprintItems, addSprintItem, addSprintItemFromPiece, updateSprintItem, toggleSprintItem, deleteSprintItem, clearDoneSprintItems,
+      leads, addLead, regenerateLead, advanceLeadStage, setLeadStage, updateLead, deleteLead,
       loading,
     }}>
       {children}
