@@ -69,16 +69,42 @@ const LEAD_TOOL = {
   },
 }
 
-export async function structureLead(rawInput) {
+// Parse-only tool for tiers 1 and 3. No message drafts get written — tier 1 doesn't need a
+// script (you already know how to talk to these people) and tier 3 must never get one. We still
+// parse the raw line so the card reads cleanly instead of showing a messy dictated sentence.
+const PARSE_TOOL = {
+  name: 'save_contact',
+  description: 'Save just the identity details of a personal contact. Do not write any messages.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'the contact\'s name' },
+      platform: {
+        type: 'string',
+        enum: ['instagram', 'tiktok', 'facebook', 'phone_contacts', 'other'],
+        description: 'guess from context if not stated, default other',
+      },
+      context: { type: 'string', description: 'clean one-line summary of what was said about them' },
+    },
+    required: ['name', 'platform', 'context'],
+  },
+}
+
+const PARSE_SYSTEM_PROMPT = `You extract the identity details of a personal contact from one raw
+spoken or typed line. Call the save_contact tool. Write no outreach messages of any kind — you
+are only tidying up who this person is and what was said about them. Keep the context summary
+lowercase and plain.`
+
+async function callClaude({ system, tool, toolName, rawInput }) {
   const res = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      tools: [LEAD_TOOL],
-      tool_choice: { type: 'tool', name: 'save_lead' },
+      system,
+      tools: [tool],
+      tool_choice: { type: 'tool', name: toolName },
       messages: [{ role: 'user', content: rawInput }],
     }),
   })
@@ -93,6 +119,14 @@ export async function structureLead(rawInput) {
   if (!record || typeof record !== 'object') {
     throw new Error('Claude did not return a structured lead')
   }
+  return record
+}
+
+// Tier 2 only: parse the line AND write the full message sequence.
+export async function structureLead(rawInput) {
+  const record = await callClaude({
+    system: SYSTEM_PROMPT, tool: LEAD_TOOL, toolName: 'save_lead', rawInput,
+  })
 
   // Normalise: guarantee the shape the UI/DB expect regardless of model wobble.
   return {
@@ -105,6 +139,18 @@ export async function structureLead(rawInput) {
       : [],
     generated_transition: (record.generated_transition || '').toString().trim(),
     generated_referral_ask: (record.generated_referral_ask || '').toString().trim(),
+  }
+}
+
+// Tiers 1 and 3: identity only, no drafts.
+export async function parseLeadOnly(rawInput) {
+  const record = await callClaude({
+    system: PARSE_SYSTEM_PROMPT, tool: PARSE_TOOL, toolName: 'save_contact', rawInput,
+  })
+  return {
+    name: (record.name || '').toString().trim() || fallbackName(rawInput),
+    platform: normalizePlatform(record.platform),
+    context: (record.context || '').toString().trim(),
   }
 }
 

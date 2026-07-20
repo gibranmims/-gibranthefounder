@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import { Copy, Check, ChevronDown, ChevronRight, RotateCw, Trash2 } from 'lucide-react'
+import { Copy, Check, ChevronDown, ChevronRight, RotateCw, Trash2, ArrowUp, Eye } from 'lucide-react'
 import { useApp } from '../lib/AppContext'
-import { OUTREACH_STAGE_ALL, outreachStageMeta, platformLabel } from '../lib/outreach'
+import {
+  OUTREACH_STAGE_ALL, outreachStageMeta, platformLabel,
+  TIERS, tierMeta, tierGeneratesScripts,
+} from '../lib/outreach'
 
 // One copyable message draft. Copy button flips to a check for a beat — Gibran never hand-selects.
 function CopyBlock({ label, text }) {
@@ -92,10 +95,28 @@ function StagePill({ lead, onAdvance, onJump }) {
   )
 }
 
+function LeadHead({ lead }) {
+  const tier = tierMeta(lead.tier)
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--on-surface-1)' }}>{lead.name}</span>
+        <span className={`cw-badge ${tier.badge}`}>{tier.label}</span>
+        {lead.platform && <span className="cw-chip" style={{ fontSize: 11 }}>{platformLabel(lead.platform)}</span>}
+      </div>
+      {lead.context && (
+        <div style={{ fontSize: 13.5, color: 'var(--on-surface-2)', marginTop: 4, lineHeight: 1.5 }}>{lead.context}</div>
+      )}
+    </div>
+  )
+}
+
+// Tier 1 and 2 cards. Only tier 2 has scripts — tier 1 gets the reminder that it doesn't need one.
 function LeadCard({ lead, onAdvance, onJump, onRegenerate, onDelete }) {
   const [expanded, setExpanded] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const followups = Array.isArray(lead.generated_followups) ? lead.generated_followups : []
+  const usesScripts = tierGeneratesScripts(lead.tier)
   const hasScripts = lead.generated_opener || followups.length || lead.generated_transition || lead.generated_referral_ask
 
   async function regen() {
@@ -107,20 +128,16 @@ function LeadCard({ lead, onAdvance, onJump, onRegenerate, onDelete }) {
   return (
     <div className="cw-card" style={{ padding: '16px 18px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--on-surface-1)' }}>{lead.name}</span>
-            {lead.platform && <span className="cw-chip" style={{ fontSize: 11 }}>{platformLabel(lead.platform)}</span>}
-          </div>
-          {lead.context && (
-            <div style={{ fontSize: 13.5, color: 'var(--on-surface-2)', marginTop: 4, lineHeight: 1.5 }}>{lead.context}</div>
-          )}
-        </div>
+        <LeadHead lead={lead} />
         <StagePill lead={lead} onAdvance={onAdvance} onJump={onJump} />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-        {hasScripts ? (
+        {!usesScripts ? (
+          <span style={{ fontSize: 12.5, color: 'var(--on-surface-3)', fontStyle: 'italic' }}>
+            No script. Just talk to them like you always do.
+          </span>
+        ) : hasScripts ? (
           <button
             className="cw-btn-ghost"
             onClick={() => setExpanded(e => !e)}
@@ -150,7 +167,7 @@ function LeadCard({ lead, onAdvance, onJump, onRegenerate, onDelete }) {
         </button>
       </div>
 
-      {expanded && hasScripts && (
+      {expanded && usesScripts && hasScripts && (
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--stroke-1)' }}>
           <CopyBlock label="Opener" text={lead.generated_opener} />
           {followups.map((f, i) => (
@@ -164,19 +181,57 @@ function LeadCard({ lead, onAdvance, onJump, onRegenerate, onDelete }) {
   )
 }
 
+// Tier 3. Deliberately has no stage pill and no scripts — the only action is the promotion
+// that happens when THEY engage first.
+function WatchingCard({ lead, onPromote, onDelete }) {
+  const [promoting, setPromoting] = useState(false)
+  async function promote() {
+    setPromoting(true)
+    await onPromote(lead.id)
+    setPromoting(false)
+  }
+  return (
+    <div className="cw-card" style={{ padding: '14px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <LeadHead lead={lead} />
+        <button
+          className="cw-btn-ghost"
+          onClick={promote}
+          disabled={promoting}
+          title="Only if they replied, commented, or reacted first"
+          style={{ padding: '5px 11px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}
+        >
+          <ArrowUp size={13} />
+          {promoting ? 'Promoting…' : 'They engaged first'}
+        </button>
+        <button
+          className="cw-btn-ghost"
+          onClick={() => onDelete(lead.id)}
+          title="Delete lead"
+          style={{ padding: '5px 9px', fontSize: 12, color: 'var(--danger)', flexShrink: 0 }}
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Outreach() {
-  const { leads, addLead, regenerateLead, advanceLeadStage, setLeadStage, deleteLead } = useApp()
+  const { leads, addLead, regenerateLead, promoteLeadToWarm, advanceLeadStage, setLeadStage, deleteLead } = useApp()
   const [text, setText] = useState('')
+  const [tier, setTier] = useState(2)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
   const [filter, setFilter] = useState('all')
+  const [showWatching, setShowWatching] = useState(false)
 
   async function handleAdd() {
     const raw = text.trim()
     if (!raw || busy) return
     setBusy(true)
     setNotice(null)
-    const res = await addLead(raw)
+    const res = await addLead(raw, tier)
     setBusy(false)
     if (!res.ok) {
       setNotice({ type: 'error', msg: res.error || 'Could not save that lead.' })
@@ -184,8 +239,7 @@ export default function Outreach() {
     }
     setText('')
     if (res.error) {
-      // Saved, but the AI draft failed — the card will offer a re-generate.
-      setNotice({ type: 'warn', msg: 'Saved, but message generation failed. Open the card to re-generate.' })
+      setNotice({ type: 'warn', msg: 'Saved, but the AI call failed. Open the card to retry.' })
     }
   }
 
@@ -197,13 +251,17 @@ export default function Outreach() {
     }
   }
 
-  const counts = useMemo(() => ({
-    total: leads.length,
-    contacted: leads.filter(l => l.stage !== 'not_contacted').length,
-    referrals: leads.filter(l => l.stage === 'referred').length,
-  }), [leads])
+  // Tier 3 lives apart from the pipeline — it isn't a stage, it's a holding pen.
+  const active = useMemo(() => leads.filter(l => Number(l.tier) !== 3), [leads])
+  const watching = useMemo(() => leads.filter(l => Number(l.tier) === 3), [leads])
 
-  const filtered = filter === 'all' ? leads : leads.filter(l => l.stage === filter)
+  const counts = useMemo(() => ({
+    active: active.length,
+    contacted: active.filter(l => l.stage !== 'not_contacted').length,
+    referrals: active.filter(l => l.stage === 'referred').length,
+  }), [active])
+
+  const filtered = filter === 'all' ? active : active.filter(l => l.stage === filter)
 
   const FILTERS = [
     { key: 'all', label: 'All' },
@@ -212,6 +270,8 @@ export default function Outreach() {
     { key: 'referred', label: 'Referred' },
     { key: 'not_now', label: 'Not Now' },
   ]
+
+  const activeTier = tierMeta(tier)
 
   return (
     <div>
@@ -225,8 +285,8 @@ export default function Outreach() {
         {/* Counts strip */}
         <div className="cw-grid-3" style={{ marginBottom: 20 }}>
           <div className="cw-card cw-stat" style={{ padding: '14px 18px' }}>
-            <div className="cw-stat-value">{counts.total}</div>
-            <div className="cw-stat-label">Leads</div>
+            <div className="cw-stat-value">{counts.active}</div>
+            <div className="cw-stat-label">In Pipeline</div>
           </div>
           <div className="cw-card cw-stat" style={{ padding: '14px 18px' }}>
             <div className="cw-stat-value">{counts.contacted}</div>
@@ -241,6 +301,34 @@ export default function Outreach() {
         {/* Quick Capture */}
         <div className="cw-card" style={{ padding: 20, marginBottom: 20 }}>
           <div className="cw-label">Quick Capture</div>
+
+          {/* Tier is set by hand — the AI can't know how close the relationship is. */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            {TIERS.map(t => {
+              const on = tier === t.key
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTier(t.key)}
+                  className="cw-chip"
+                  style={{
+                    cursor: 'pointer', fontSize: 12.5, flex: 1, justifyContent: 'center',
+                    background: on ? 'var(--accent)' : undefined,
+                    color: on ? 'var(--accent-ink)' : undefined,
+                    borderColor: on ? 'transparent' : undefined,
+                    fontWeight: on ? 650 : undefined,
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--on-surface-3)', lineHeight: 1.5, marginBottom: 12 }}>
+            <strong style={{ color: 'var(--on-surface-2)', fontWeight: 600 }}>{activeTier.blurb}</strong>{' '}
+            {activeTier.rule}
+          </div>
+
           <textarea
             className="cw-textarea"
             value={text}
@@ -252,7 +340,7 @@ export default function Outreach() {
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="cw-btn-primary" onClick={handleAdd} disabled={busy}>
-              {busy ? 'Writing…' : 'Add'}
+              {busy ? (tierGeneratesScripts(tier) ? 'Writing…' : 'Saving…') : 'Add'}
             </button>
             {notice && (
               <span style={{ fontSize: 12.5, color: notice.type === 'error' ? 'var(--danger)' : 'var(--warn)' }}>
@@ -265,7 +353,7 @@ export default function Outreach() {
         {/* Stage filters */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
           {FILTERS.map(f => {
-            const active = filter === f.key
+            const on = filter === f.key
             return (
               <button
                 key={f.key}
@@ -273,10 +361,10 @@ export default function Outreach() {
                 onClick={() => setFilter(f.key)}
                 style={{
                   cursor: 'pointer', fontSize: 12.5,
-                  background: active ? 'var(--accent)' : undefined,
-                  color: active ? 'var(--accent-ink)' : undefined,
-                  borderColor: active ? 'transparent' : undefined,
-                  fontWeight: active ? 650 : undefined,
+                  background: on ? 'var(--accent)' : undefined,
+                  color: on ? 'var(--accent-ink)' : undefined,
+                  borderColor: on ? 'transparent' : undefined,
+                  fontWeight: on ? 650 : undefined,
                 }}
               >
                 {f.label}
@@ -285,12 +373,12 @@ export default function Outreach() {
           })}
         </div>
 
-        {/* Lead list */}
+        {/* Pipeline — tiers 1 and 2 */}
         {filtered.length === 0 ? (
           <div className="cw-card cw-empty">
-            <div className="cw-empty-title">{leads.length === 0 ? 'No leads yet' : 'Nothing in this stage'}</div>
+            <div className="cw-empty-title">{active.length === 0 ? 'No leads yet' : 'Nothing in this stage'}</div>
             <div className="cw-empty-sub">
-              {leads.length === 0
+              {active.length === 0
                 ? 'Drop a line about a contact above. Name, platform, what\'s going on with them.'
                 : 'Try a different filter, or capture someone new.'}
             </div>
@@ -307,6 +395,39 @@ export default function Outreach() {
                 onDelete={deleteLead}
               />
             ))}
+          </div>
+        )}
+
+        {/* Watching — tier 3, deliberately apart from the pipeline */}
+        {watching.length > 0 && (
+          <div style={{ marginTop: 28 }}>
+            <button
+              onClick={() => setShowWatching(s => !s)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+                background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 0', marginBottom: 10,
+                color: 'var(--on-canvas-2)', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
+              }}
+            >
+              {showWatching ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <Eye size={14} />
+              Watching · {watching.length}
+              <span style={{ fontWeight: 400, color: 'var(--on-canvas-3)', fontSize: 12.5 }}>
+                — no scripts. let your content reach them.
+              </span>
+            </button>
+            {showWatching && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {watching.map(lead => (
+                  <WatchingCard
+                    key={lead.id}
+                    lead={lead}
+                    onPromote={promoteLeadToWarm}
+                    onDelete={deleteLead}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

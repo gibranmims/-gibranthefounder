@@ -111,11 +111,19 @@ create policy "Users can manage own sprint items"
 -- leads: warm outreach tracker — one row per personal contact being warmed for a
 -- CoWorlds referral. raw_input keeps the original spoken line; the generated_* columns
 -- hold the Claude-written message drafts. Stage is plain text (not_contacted → asked →
--- referred, plus not_now) so it can evolve without an ALTER TYPE.
+-- referred, plus not_now, plus watching for tier 3) so it can evolve without an ALTER TYPE.
+--
+-- tier drives the whole method and is set by hand at capture (the AI can't know how close
+-- a relationship is):
+--   1 = close ties      — no scripts, just talk to them. pure tracking.
+--   2 = warm but distant — the full generated sequence. what the tool is built for.
+--   3 = cold followers   — parked in 'watching'. no scripts. only promoted to tier 2
+--                          if THEY engage first; you never reach down into tier 3.
 create table if not exists leads (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
+  tier smallint not null default 2,
   platform text,
   context text,
   raw_input text,
@@ -185,6 +193,7 @@ create policy "Users can manage own leads"
 --   id uuid default gen_random_uuid() primary key,
 --   user_id uuid references auth.users on delete cascade not null,
 --   name text not null,
+--   tier smallint not null default 2,
 --   platform text,
 --   context text,
 --   raw_input text,
@@ -201,3 +210,8 @@ create policy "Users can manage own leads"
 -- );
 -- alter table leads enable row level security;
 -- create policy "Users can manage own leads" on leads for all using (auth.uid() = user_id);
+--
+-- -- Warm Outreach tiers. Run this if you already created the leads table above WITHOUT
+-- -- the tier column. Existing rows default to tier 2 (warm but distant), which is the
+-- -- tier the generated-sequence flow was originally built for, so nothing is mis-tagged.
+-- alter table leads add column if not exists tier smallint not null default 2;
