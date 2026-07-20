@@ -120,11 +120,13 @@ create policy "Users can manage own sprint items"
 --   2 = warm but distant — the full generated sequence. what the tool is built for.
 --   3 = cold followers   — parked in 'watching'. no scripts. only promoted to tier 2
 --                          if THEY engage first; you never reach down into tier 3.
+-- tier is NULLABLE on purpose: bulk-imported names land untagged so triage is visible
+-- work. null means "haven't sorted this person yet", which is different from tier 2.
 create table if not exists leads (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
-  tier smallint not null default 2,
+  tier smallint,
   platform text,
   context text,
   raw_input text,
@@ -230,6 +232,11 @@ create policy "Users can manage own challenge checkins"
 -- -- the tier column. Existing rows default to tier 2 (warm but distant), which is the
 -- -- tier the generated-sequence flow was originally built for, so nothing is mis-tagged.
 -- alter table leads add column if not exists tier smallint not null default 2;
+--
+-- -- Bulk import: tier becomes nullable so imported names can land "untagged" and show up
+-- -- as triage work, rather than being silently assumed warm. Existing rows keep their tier.
+-- alter table leads alter column tier drop not null;
+-- alter table leads alter column tier drop default;
 --
 -- -- 100-Day Challenge tracker.
 -- alter table profile add column if not exists challenge_start_date date;

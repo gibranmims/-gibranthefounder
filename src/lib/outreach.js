@@ -37,11 +37,29 @@ export const TIERS = [
   },
 ]
 
-export function tierMeta(tier) {
-  return TIERS.find(t => t.key === Number(tier)) || TIERS[1]
+// Bulk-imported names arrive with no tier. Untagged is a real state, not a default —
+// "I haven't sorted this person yet" must stay distinguishable from "I decided they're warm",
+// otherwise a cold follower can quietly inherit warm treatment.
+export const UNTAGGED = {
+  key: null,
+  label: 'Untagged',
+  short: 'Untagged',
+  badge: 'cw-badge-neutral',
+  blurb: 'Not sorted yet.',
+  rule: 'Tag them before anything gets written.',
+  generatesScripts: false,
 }
 
-// Only tier 2 gets generated message drafts.
+export function isUntagged(tier) {
+  return tier === null || tier === undefined || tier === ''
+}
+
+export function tierMeta(tier) {
+  if (isUntagged(tier)) return UNTAGGED
+  return TIERS.find(t => t.key === Number(tier)) || UNTAGGED
+}
+
+// Only tier 2 gets generated message drafts. Untagged never does.
 export function tierGeneratesScripts(tier) {
   return tierMeta(tier).generatesScripts
 }
@@ -76,6 +94,15 @@ export function nextStage(stage) {
 // NOT "to reach out", because reaching out to tier 3 is the thing we're preventing.
 export function initialStage(tier) {
   return Number(tier) === 3 ? 'watching' : 'not_contacted'
+}
+
+// Retagging moves a lead between the pipeline and the tier-3 holding pen. Only force a stage
+// change when the lead is crossing that boundary — otherwise leave their progress alone.
+export function stageForTierChange(currentStage, newTier) {
+  const goingCold = Number(newTier) === 3
+  if (goingCold) return 'watching'
+  if (currentStage === 'watching') return 'not_contacted'
+  return currentStage
 }
 
 // ── PLATFORMS ──

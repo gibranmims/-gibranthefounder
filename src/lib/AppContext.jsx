@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { structureLead, parseLeadOnly, fallbackName } from './outreachAI'
-import { nextStage, initialStage, tierGeneratesScripts } from './outreach'
+import { structureLead, parseLeadOnly, parseLeadList, fallbackName } from './outreachAI'
+import { nextStage, initialStage, tierGeneratesScripts, stageForTierChange } from './outreach'
 
 const AppContext = createContext(null)
 
@@ -312,8 +312,53 @@ export function AppProvider({ children, userId, user }) {
     return { ok: true, error: aiError }
   }
 
-  // Re-run the AI on an already-saved lead (used when the first generation failed).
-  // Guarded to tier 2 — tiers 1 and 3 have no scripts by design, not by accident.
+  // Bulk import: one raw blob (dictated or pasted) → many leads in a single Claude call and a
+  // single insert. Deliberately writes NO scripts and assigns NO tier — imported names land
+  // untagged so triage is visible work, and generation happens later, per person, on demand.
+  async function addLeadsBulk(rawInput) {
+    const raw = (rawInput || '').trim()
+    if (!raw) return { ok: false, error: 'Empty input' }
+
+    let contacts
+    try {
+      contacts = await parseLeadList(raw)
+    } catch (e) {
+      return { ok: false, error: e.message || 'Could not read that list' }
+    }
+    if (!contacts.length) return { ok: false, error: 'No names found in that' }
+
+    const rows = contacts.map(c => ({
+      user_id: userId,
+      name: c.name,
+      tier: null,
+      platform: c.platform || null,
+      context: c.context || null,
+      // Per-contact, not the whole blob — this is what generation reads from later.
+      raw_input: [c.name, c.context].filter(Boolean).join(', '),
+      stage: 'not_contacted',
+    }))
+
+    const { data, error } = await supabase.from('leads').insert(rows).select()
+    if (error) return { ok: false, error: error.message }
+
+    setLeads(prev => [...(data || []), ...prev])
+    bumpStreak()
+    return { ok: true, count: (data || []).length }
+  }
+
+  // Tagging a tier. Only forces a stage change when crossing the tier-3 boundary, so a lead
+  // that's already mid-pipeline keeps its progress when retagged between close and warm.
+  async function setLeadTier(id, tier) {
+    const lead = leads.find(l => l.id === id)
+    if (!lead) return
+    const updates = { tier, stage: stageForTierChange(lead.stage, tier) }
+    await supabase.from('leads').update(updates).eq('id', id)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
+  }
+
+  // Re-run the AI on an already-saved lead. Also the on-demand generator — nothing is written
+  // at capture time any more, so this runs the first time a warm lead's row is opened.
+  // Guarded to tier 2 — tiers 1, 3 and untagged have no scripts by design, not by accident.
   async function regenerateLead(id) {
     const lead = leads.find(l => l.id === id)
     if (!lead) return { ok: false, error: 'Lead not found' }
@@ -403,7 +448,8 @@ export function AppProvider({ children, userId, user }) {
       ideas, addIdea, deleteIdea, promoteIdea,
       channels, addChannel, updateChannel, deleteChannel, moveChannel,
       sprintItems, addSprintItem, addSprintItemFromPiece, updateSprintItem, toggleSprintItem, deleteSprintItem, clearDoneSprintItems,
-      leads, addLead, regenerateLead, promoteLeadToWarm, advanceLeadStage, setLeadStage, updateLead, deleteLead,
+      leads, addLead, addLeadsBulk, regenerateLead, promoteLeadToWarm,
+      advanceLeadStage, setLeadStage, setLeadTier, updateLead, deleteLead,
       challengeStartDate, challengeCheckins, toggleChallengeCheckin,
       loading,
     }}>

@@ -94,13 +94,13 @@ spoken or typed line. Call the save_contact tool. Write no outreach messages of 
 are only tidying up who this person is and what was said about them. Keep the context summary
 lowercase and plain.`
 
-async function callClaude({ system, tool, toolName, rawInput }) {
+async function callClaude({ system, tool, toolName, rawInput, maxTokens = 1024 }) {
   const res = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       system,
       tools: [tool],
       tool_choice: { type: 'tool', name: toolName },
@@ -138,6 +138,75 @@ export async function structureLead(rawInput) {
       : [],
     generated_transition: (record.generated_transition || '').toString().trim(),
   }
+}
+
+// Bulk import. One call for the whole dictated or pasted blob, however many people are in it —
+// not one call per name. Writes no messages and assigns no tier: imported names land untagged
+// so triage stays visible work.
+const LIST_TOOL = {
+  name: 'save_contacts',
+  description: 'Save a list of personal contacts parsed out of one raw block of text.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      contacts: {
+        type: 'array',
+        description: 'one entry per distinct person mentioned, in the order they were said',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'the person\'s name as said' },
+            platform: {
+              type: 'string',
+              enum: ['instagram', 'tiktok', 'facebook', 'phone_contacts', 'other'],
+              description: 'only if actually stated, otherwise other',
+            },
+            context: {
+              type: 'string',
+              description: 'any detail mentioned about this specific person. empty string if none was given. never invent one',
+            },
+          },
+          required: ['name'],
+        },
+      },
+    },
+    required: ['contacts'],
+  },
+}
+
+const LIST_SYSTEM_PROMPT = `You split one raw block of dictated or pasted text into a list of
+individual people. Call the save_contacts tool.
+
+The input is someone talking or typing through a list of personal contacts. It may be messy,
+run-on, comma separated, newline separated, or full of filler words from speech to text. Your
+only job is to separate it into one entry per distinct person and attach any detail that was
+said about that specific person.
+
+Rules:
+- one entry per person. do not merge two people, do not split one person into two.
+- keep names as spoken. do not correct or formalise them.
+- context is only what was actually said about that person. if nothing was said, use an empty
+  string. never invent a detail, a platform, or a relationship.
+- ignore filler words and speech to text noise like "um", "okay so", "next one".
+- write no outreach messages of any kind.`
+
+export async function parseLeadList(rawInput) {
+  const record = await callClaude({
+    system: LIST_SYSTEM_PROMPT,
+    tool: LIST_TOOL,
+    toolName: 'save_contacts',
+    rawInput,
+    maxTokens: 8192,
+  })
+
+  const contacts = Array.isArray(record.contacts) ? record.contacts : []
+  return contacts
+    .map(c => ({
+      name: (c?.name || '').toString().trim(),
+      platform: normalizePlatform(c?.platform),
+      context: (c?.context || '').toString().trim(),
+    }))
+    .filter(c => c.name)
 }
 
 // Tiers 1 and 3: identity only, no drafts.
