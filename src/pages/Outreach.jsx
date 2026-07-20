@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react'
-import { Copy, Check, ChevronDown, ChevronRight, RotateCw, Trash2, ArrowUp, Eye } from 'lucide-react'
+import { Copy, Check, ChevronDown, ChevronRight, RotateCw, Trash2, ArrowUp, Eye, MessageSquare } from 'lucide-react'
 import { useApp } from '../lib/AppContext'
 import {
   OUTREACH_STAGE_ALL, outreachStageMeta, platformLabel,
   TIERS, tierMeta, tierGeneratesScripts,
 } from '../lib/outreach'
+import { ASK_DM_SEQUENCE, ASK_FULL, ASK_CLOSER } from '../lib/outreachAsk'
 
 // One copyable message draft. Copy button flips to a check for a beat — Gibran never hand-selects.
-function CopyBlock({ label, text }) {
+function CopyBlock({ label, note, text }) {
   const [copied, setCopied] = useState(false)
   if (!text) return null
   async function copy() {
@@ -19,12 +20,17 @@ function CopyBlock({ label, text }) {
   }
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-        <div className="cw-label" style={{ margin: 0 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5, gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="cw-label" style={{ margin: 0 }}>{label}</div>
+          {note && (
+            <div style={{ fontSize: 11.5, color: 'var(--on-surface-3)', marginTop: 2, lineHeight: 1.4 }}>{note}</div>
+          )}
+        </div>
         <button
           className="cw-btn-ghost"
           onClick={copy}
-          style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+          style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}
           {copied ? 'Copied' : 'Copy'}
@@ -33,6 +39,69 @@ function CopyBlock({ label, text }) {
       <div className="cw-card-flat" style={{ padding: '10px 12px', fontSize: 14, lineHeight: 1.55, color: 'var(--on-surface-1)', whiteSpace: 'pre-wrap' }}>
         {text}
       </div>
+    </div>
+  )
+}
+
+// The Ask — fixed reference copy, identical for every contact, so it lives here rather than on
+// any one lead card. Never AI-generated: it states real revenue, pricing and a guarantee.
+function AskReference() {
+  const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState('dm')
+  return (
+    <div className="cw-card" style={{ padding: '16px 18px', marginBottom: 20 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+          background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+          color: 'var(--on-surface-1)', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+        }}
+      >
+        {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+        <MessageSquare size={15} />
+        The Ask
+        <span style={{ fontWeight: 400, color: 'var(--on-surface-3)', fontSize: 12.5 }}>
+          — same for everyone. paste it when you get there.
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--stroke-1)' }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            {[{ k: 'dm', l: 'DM sequence' }, { k: 'full', l: 'Full version' }].map(m => {
+              const on = mode === m.k
+              return (
+                <button
+                  key={m.k}
+                  onClick={() => setMode(m.k)}
+                  className="cw-chip"
+                  style={{
+                    cursor: 'pointer', fontSize: 12.5,
+                    background: on ? 'var(--accent)' : undefined,
+                    color: on ? 'var(--accent-ink)' : undefined,
+                    borderColor: on ? 'transparent' : undefined,
+                    fontWeight: on ? 650 : undefined,
+                  }}
+                >
+                  {m.l}
+                </button>
+              )
+            })}
+          </div>
+
+          {mode === 'dm' ? (
+            ASK_DM_SEQUENCE.map(m => (
+              <CopyBlock key={m.label} label={m.label} note={m.note} text={m.text} />
+            ))
+          ) : (
+            <>
+              <CopyBlock label={ASK_FULL.label} note={ASK_FULL.note} text={ASK_FULL.text} />
+              <CopyBlock label={ASK_CLOSER.label} note={ASK_CLOSER.note} text={ASK_CLOSER.text} />
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -117,7 +186,7 @@ function LeadCard({ lead, onAdvance, onJump, onRegenerate, onDelete }) {
   const [regenerating, setRegenerating] = useState(false)
   const followups = Array.isArray(lead.generated_followups) ? lead.generated_followups : []
   const usesScripts = tierGeneratesScripts(lead.tier)
-  const hasScripts = lead.generated_opener || followups.length || lead.generated_transition || lead.generated_referral_ask
+  const hasScripts = lead.generated_opener || followups.length || lead.generated_transition
 
   async function regen() {
     setRegenerating(true)
@@ -174,7 +243,9 @@ function LeadCard({ lead, onAdvance, onJump, onRegenerate, onDelete }) {
             <CopyBlock key={i} label={`Follow-up ${i + 1}`} text={f} />
           ))}
           <CopyBlock label="Transition into the pitch" text={lead.generated_transition} />
-          <CopyBlock label="Referral ask" text={lead.generated_referral_ask} />
+          <div style={{ fontSize: 12, color: 'var(--on-surface-3)', fontStyle: 'italic', paddingTop: 2 }}>
+            Then open The Ask above — it's the same for everyone.
+          </div>
         </div>
       )}
     </div>
@@ -349,6 +420,9 @@ export default function Outreach() {
             )}
           </div>
         </div>
+
+        {/* The Ask — fixed reference copy, not tied to any one lead */}
+        <AskReference />
 
         {/* Stage filters */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>

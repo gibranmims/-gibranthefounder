@@ -302,7 +302,8 @@ export function AppProvider({ children, userId, user }) {
       generated_opener: record.generated_opener || null,
       generated_followups: record.generated_followups || null,
       generated_transition: record.generated_transition || null,
-      generated_referral_ask: record.generated_referral_ask || null,
+      // generated_referral_ask is intentionally never written — the ask is fixed reference
+      // copy in outreachAsk.js, never AI-generated. Column kept for pre-existing rows.
     }).select().single()
 
     if (error) return { ok: false, error: error.message }
@@ -328,7 +329,6 @@ export function AppProvider({ children, userId, user }) {
         generated_opener: record.generated_opener || null,
         generated_followups: record.generated_followups || null,
         generated_transition: record.generated_transition || null,
-        generated_referral_ask: record.generated_referral_ask || null,
       }
       await supabase.from('leads').update(updates).eq('id', id)
       setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
@@ -359,7 +359,6 @@ export function AppProvider({ children, userId, user }) {
         generated_opener: record.generated_opener || null,
         generated_followups: record.generated_followups || null,
         generated_transition: record.generated_transition || null,
-        generated_referral_ask: record.generated_referral_ask || null,
       }
       await supabase.from('leads').update(updates).eq('id', id)
       setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))

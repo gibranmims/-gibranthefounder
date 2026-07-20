@@ -11,19 +11,22 @@
 // Sonnet 5 gives the best voice-match for the casual-text copy.
 const MODEL = 'claude-sonnet-5'
 
-// Product context + voice rules baked in here. Edit the pricing / program copy if the offer
-// changes — this is the one place it lives. Field-level guidance rides on the tool schema below.
+// Product context + voice rules baked in here. Field-level guidance rides on the tool schema.
+//
+// The model deliberately does NOT write the referral ask. That copy makes factual claims about
+// the business (revenue figure, pricing, the guarantee) and lives as fixed, hand-written text in
+// outreachAsk.js so it can never drift or be embellished. The AI's job stops at the transition —
+// the personal, per-contact part it's actually good at.
 const SYSTEM_PROMPT = `You turn one raw spoken or typed line about a personal contact into a
-structured warm outreach record, plus ready-to-send message content. Always call the save_lead
-tool with your result.
+structured warm outreach record, plus the personal message content that leads up to a pitch.
+Always call the save_lead tool with your result.
 
-CONTEXT ON THE PROGRAM BEING PITCHED (bake this in, do not ask about it):
-CoWorlds runs Creator Sprint, a 90-day done-with-you program that installs a creator business.
-It helps creators who already make content get paid for it consistently, through UGC brand deals
-and TikTok Shop income. Price is $5,000 founder rate right now, going to $10,000 once more
-testimonials are stacked. This is not free and never frame it as free. The ask to warm contacts
-is NOT "do you want this." It is "do you know anyone who'd want this," a referral ask, because
-these are personal contacts being warmed up, not qualified leads.
+CONTEXT (for tone only — do not pitch, do not write the offer):
+Gibran runs CoWorlds. He is warming up personal contacts so he can eventually ask them for a
+REFERRAL ("do you know anyone who'd want this"), never a direct sale to the contact themselves.
+You are writing the catch-up conversation that happens BEFORE that ask. Someone else writes the
+ask itself. Never state prices, revenue numbers, guarantees, program details, or results — you
+do not know them and must not invent them.
 
 VOICE RULES, apply to every generated message:
 - lowercase only
@@ -58,14 +61,10 @@ const LEAD_TOOL = {
       },
       generated_transition: {
         type: 'string',
-        description: 'the line that shifts from personal catch-up into mentioning CoWorlds exists. a natural pivot, not a hard cut',
-      },
-      generated_referral_ask: {
-        type: 'string',
-        description: 'the referral pitch: name creator sprint, what it does in one line, that spots are limited at founder pricing right now, ask if anyone comes to mind, end with a soft out',
+        description: 'the line that shifts from personal catch-up into mentioning gibran started something new. a natural pivot, not a hard cut. do NOT describe the offer, name a price, or make the ask — this line only opens the door',
       },
     },
-    required: ['name', 'platform', 'context', 'generated_opener', 'generated_followups', 'generated_transition', 'generated_referral_ask'],
+    required: ['name', 'platform', 'context', 'generated_opener', 'generated_followups', 'generated_transition'],
   },
 }
 
@@ -138,7 +137,6 @@ export async function structureLead(rawInput) {
       ? record.generated_followups.map(s => (s || '').toString().trim()).filter(Boolean)
       : [],
     generated_transition: (record.generated_transition || '').toString().trim(),
-    generated_referral_ask: (record.generated_referral_ask || '').toString().trim(),
   }
 }
 
