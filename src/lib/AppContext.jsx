@@ -38,13 +38,15 @@ export function AppProvider({ children, userId, user }) {
   const [channels, setChannels] = useState([])
   const [sprintItems, setSprintItems] = useState([])
   const [leads, setLeads] = useState([])
+  const [challengeStartDate, setChallengeStartDate] = useState(null)
+  const [challengeCheckins, setChallengeCheckins] = useState(new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (userId) loadAll() }, [userId])
 
   async function loadAll() {
     setLoading(true)
-    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels(), loadSprintItems(), loadLeads()])
+    await Promise.all([loadProfile(), loadContentPieces(), loadIdeas(), loadChannels(), loadSprintItems(), loadLeads(), loadChallengeCheckins()])
     setLoading(false)
   }
 
@@ -59,6 +61,14 @@ export function AppProvider({ children, userId, user }) {
       setDriveFolderId(data.drive_ready_folder_id || '')
       setStreakCount(data.streak_count || 0)
       setLastActivityDate(data.last_activity_date || null)
+      if (data.challenge_start_date) {
+        setChallengeStartDate(data.challenge_start_date)
+      } else {
+        // First time seeing this profile — the 100-day challenge starts today.
+        const today = getToday()
+        setChallengeStartDate(today)
+        await supabase.from('profile').upsert({ id: userId, challenge_start_date: today })
+      }
     }
   }
 
@@ -97,6 +107,11 @@ export function AppProvider({ children, userId, user }) {
     setLeads(data || [])
   }
 
+  async function loadChallengeCheckins() {
+    const { data } = await supabase.from('challenge_checkins').select('date').eq('user_id', userId)
+    setChallengeCheckins(new Set((data || []).map(r => r.date)))
+  }
+
   // ── PROFILE ──
   async function updateProfile(updates) {
     await supabase.from('profile').upsert({ id: userId, ...updates })
@@ -106,6 +121,19 @@ export function AppProvider({ children, userId, user }) {
     if ('pillars_notes' in updates) setPillarsNotes(updates.pillars_notes)
     if ('gcal_embed_url' in updates) setGcalEmbedUrl(updates.gcal_embed_url)
     if ('drive_ready_folder_id' in updates) setDriveFolderId(updates.drive_ready_folder_id)
+    if ('challenge_start_date' in updates) setChallengeStartDate(updates.challenge_start_date)
+  }
+
+  // ── 100-DAY CHALLENGE ──
+  async function toggleChallengeCheckin(dateStr) {
+    if (challengeCheckins.has(dateStr)) {
+      await supabase.from('challenge_checkins').delete().eq('user_id', userId).eq('date', dateStr)
+      setChallengeCheckins(prev => { const next = new Set(prev); next.delete(dateStr); return next })
+    } else {
+      await supabase.from('challenge_checkins').upsert({ user_id: userId, date: dateStr }, { onConflict: 'user_id,date' })
+      setChallengeCheckins(prev => new Set(prev).add(dateStr))
+      bumpStreak()
+    }
   }
 
   // Bump the daily streak — called on any create/progress action. Increments once per day.
@@ -377,6 +405,7 @@ export function AppProvider({ children, userId, user }) {
       channels, addChannel, updateChannel, deleteChannel, moveChannel,
       sprintItems, addSprintItem, addSprintItemFromPiece, updateSprintItem, toggleSprintItem, deleteSprintItem, clearDoneSprintItems,
       leads, addLead, regenerateLead, promoteLeadToWarm, advanceLeadStage, setLeadStage, updateLead, deleteLead,
+      challengeStartDate, challengeCheckins, toggleChallengeCheckin,
       loading,
     }}>
       {children}

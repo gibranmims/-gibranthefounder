@@ -13,6 +13,7 @@ create table if not exists profile (
   dark_mode boolean default false,
   streak_count integer default 0,
   last_activity_date date,
+  challenge_start_date date,
   created_at timestamptz default now()
 );
 alter table profile enable row level security;
@@ -142,6 +143,20 @@ alter table leads enable row level security;
 create policy "Users can manage own leads"
   on leads for all using (auth.uid() = user_id);
 
+-- challenge_checkins: the 100-day posting streak. One row per day actually posted —
+-- presence of a row is the checkmark, deliberately self-reported rather than derived
+-- from content_pieces (posting can happen outside a tracked piece).
+create table if not exists challenge_checkins (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  date date not null,
+  created_at timestamptz default now(),
+  unique (user_id, date)
+);
+alter table challenge_checkins enable row level security;
+create policy "Users can manage own challenge checkins"
+  on challenge_checkins for all using (auth.uid() = user_id);
+
 -- Migration for existing databases (safe to re-run):
 -- alter table profile add column if not exists drive_ready_folder_id text default '';
 --
@@ -215,3 +230,15 @@ create policy "Users can manage own leads"
 -- -- the tier column. Existing rows default to tier 2 (warm but distant), which is the
 -- -- tier the generated-sequence flow was originally built for, so nothing is mis-tagged.
 -- alter table leads add column if not exists tier smallint not null default 2;
+--
+-- -- 100-Day Challenge tracker.
+-- alter table profile add column if not exists challenge_start_date date;
+-- create table if not exists challenge_checkins (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users on delete cascade not null,
+--   date date not null,
+--   created_at timestamptz default now(),
+--   unique (user_id, date)
+-- );
+-- alter table challenge_checkins enable row level security;
+-- create policy "Users can manage own challenge checkins" on challenge_checkins for all using (auth.uid() = user_id);

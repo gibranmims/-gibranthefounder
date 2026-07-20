@@ -13,8 +13,8 @@ function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export default function Calendar() {
-  const { contentPieces, channels } = useApp()
+export default function Calendar({ onNavigate }) {
+  const { contentPieces, channels, challengeStartDate, challengeCheckins } = useApp()
   const [dayOffset, setDayOffset] = useState(0) // shifts the 5-day window by WINDOW_SIZE each nav click
   const [modalState, setModalState] = useState(null) // { piece } | { initial } | null
 
@@ -50,11 +50,25 @@ export default function Calendar() {
   }
 
   const todayStr = toDateStr(new Date())
+  const challengeDay = challengeStartDate
+    ? Math.min(100, Math.max(1, Math.round((new Date(todayStr) - new Date(challengeStartDate)) / 86400000) + 1))
+    : null
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-        <h1 className="cw-title" style={{ fontSize: 26 }}>Calendar</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h1 className="cw-title" style={{ fontSize: 26 }}>Calendar</h1>
+          {challengeDay && (
+            <button
+              className="cw-chip"
+              onClick={() => onNavigate?.('challenge')}
+              style={{ color: challengeCheckins.has(todayStr) ? 'var(--ok)' : 'var(--accent)' }}
+            >
+              Day {challengeDay}/100{challengeCheckins.has(todayStr) ? ' ✓' : ''}
+            </button>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button className="cw-btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setDayOffset(o => o - WINDOW_SIZE)}>←</button>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: 'var(--on-canvas-1)', whiteSpace: 'nowrap' }}>{weekLabel}</div>
