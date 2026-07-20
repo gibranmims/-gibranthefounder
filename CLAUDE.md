@@ -12,8 +12,8 @@ daily to plan, script, record, and post his own content.
 
 React 18 + Vite 5, Tailwind + framer-motion + lucide-react + `@hello-pangea/dnd`,
 Supabase (own project — not shared with any other app), Express `server.js`
-(static serve + a dormant `/api/claude` proxy reserved for a future AI script
-generator, not built yet).
+(static serve + `/api/claude` proxy — keeps the Anthropic key server-side; used
+by Warm Outreach's lead-generation calls, see below).
 
 ## Design system
 
@@ -40,8 +40,16 @@ anything about the schema, it has grown several migration blocks over time.
 - **`sprint_items`** — "Recording Lineup." Can link to a `content_piece_id` with
   a `filming_style` (phone/studio); checking off a linked item auto-advances that
   piece's stage to `filmed`.
+- **`leads`** — Warm Outreach tracker (see below). `tier` (1 close / 2 warm / 3
+  cold) is set by hand at capture — it's the one field the AI can't infer — and
+  gates whether message drafts get generated at all.
+- **`challenge_checkins`** — 100-Day Challenge. One row per day actually posted;
+  presence of a row is the checkmark. Deliberately self-reported (not derived
+  from `content_pieces.posted_date`) since posting can happen outside a tracked
+  piece.
 - **`profile`** — single row per user: display name, Vision page's editable
-  positioning/ICP/pillars notes, streak, Drive folder ID.
+  positioning/ICP/pillars notes, streak, Drive folder ID, `challenge_start_date`
+  (auto-set to "today" the first time a profile loads with it null).
 
 ## The four content pillars
 
@@ -63,12 +71,24 @@ content, until authority is earned.
 
 - **Calendar** (home page) — 5-day rolling window anchored on today (not a fixed
   Mon–Sun week), one row per channel, per-day posted checkmark, Ready to Post
-  Drive panel below the grid.
+  Drive panel below the grid, small "Day X/100" chip linking to the challenge
+  tracker.
+- **100 Days** — 10x10 grid, one box per day of the challenge. Green = posted,
+  red = missed (past, unchecked), pink outline = today. Click any past-or-today
+  box to toggle; future boxes are disabled.
 - **Buckets** — four pillar columns, real drag-and-drop (reassigns pillar), cards
   sort by production stage with color-coded stage badges, "Edits Needed" side
   panel surfaces cross-pillar filmed-not-edited pieces.
 - **Recording Lineup** — table (# / video checkbox / filming style), plus a
   "Scripted & Ready" quick-add pulling straight from Buckets.
+- **Warm Outreach** — separate from Buckets/Calendar entirely; a referral-ask
+  tracker for personal contacts, not a content tool. Capture a raw line about
+  someone → tier it by hand (1 close / 2 warm / 3 cold) → tier 2 gets an AI-drafted
+  opener/followups/referral-ask via `src/lib/outreachAI.js` (forced tool use,
+  `claude-sonnet-5`, through `/api/claude`); tiers 1 and 3 get no scripts by
+  design. Tap-to-advance stage pipeline in `src/lib/outreach.js`. Tier 3 can only
+  be promoted to tier 2 if they engage first — the tool never lets you reach
+  down into cold contacts.
 - **Idea Bank**, **Vision** (static philosophy + editable notes), **Settings**
   (channel management, Drive folder, password).
 
